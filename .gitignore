@@ -11,6 +11,8 @@ dist/
 build/
 *.tsbuildinfo
 .parcel-cache/
+.vite/
+**/.vite/
 
 # ─── Env / secrets ───────────────────────────────
 .env
