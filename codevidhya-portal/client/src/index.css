@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #ffffff;
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+}
+
+.gradient-text {
+  background: linear-gradient(90deg, #3B6BFF 0%, #7C3AED 50%, #EC4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.mesh-bg {
+  background:
+    radial-gradient(800px 400px at 10% 10%, rgba(91,134,255,0.18), transparent 60%),
+    radial-gradient(700px 400px at 90% 20%, rgba(236,72,153,0.10), transparent 60%),
+    radial-gradient(600px 400px at 50% 100%, rgba(124,58,237,0.10), transparent 60%);
+}
+
+.dot-grid {
+  background-image: radial-gradient(circle, rgba(15,23,42,0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+.glass-card {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 16px;
+  box-shadow: 0 12px 30px -15px rgba(15,23,42,0.18);
+}
+
+.card-glow {
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+.card-glow:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 25px 50px -25px rgba(59,107,255,0.35);
+}
+
+.scroll-progress-bar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3B6BFF, #7C3AED, #EC4899);
+  transform-origin: 0%;
+  z-index: 100;
+}
+
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-gentle-float { animation: gentle-float 4s ease-in-out infinite; }
+.animate-gentle-float-slow { animation: gentle-float 6s ease-in-out infinite; }

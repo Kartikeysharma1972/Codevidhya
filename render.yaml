@@ -1,0 +1,97 @@
+# Codevidhya — Render Blueprint
+#
+# This Blueprint defines four web services that together form the Codevidhya
+# platform. After connecting this repo to Render via "New + → Blueprint", Render
+# will create all four services in one go. You still need to enter the secret
+# env vars (MongoDB URI, JWT secrets, GROQ API key) and the cross-service URLs
+# manually — see DEPLOY.md.
+
+services:
+  # ─── 1. Codevidhya Portal — landing, signup/login, unified entrypoint ───
+  - type: web
+    name: codevidhya-portal
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: cd codevidhya-portal/server && npm install && cd ../client && npm install --include=dev && npm run build
+    startCommand: cd codevidhya-portal/server && node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_SETUP_KEY
+        value: codevidhya_admin_2024
+      # URLs of the three downstream apps (also deployed below). Set these in the
+      # Render dashboard after the other three services finish their first deploy.
+      - key: STUDENT_APP_URL
+        sync: false
+      - key: TEACHER_APP_URL
+        sync: false
+      - key: ADMIN_APP_URL
+        sync: false
+      # Vite needs these at build-time so the portal client knows where to send
+      # users for the role-based handoff. Same URLs as above.
+      - key: VITE_STUDENT_URL
+        sync: false
+      - key: VITE_TEACHER_URL
+        sync: false
+      - key: VITE_ADMIN_URL
+        sync: false
+
+  # ─── 2. AI Tutor (student app) ───
+  - type: web
+    name: codevidhya-ai-tutor
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: cd "student/Ai Tutor" && npm run install:all && npm run build
+    startCommand: cd "student/Ai Tutor" && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+
+  # ─── 3. Classroom AI (teacher app) ───
+  - type: web
+    name: codevidhya-classroom-ai
+    runtime: python
+    plan: free
+    region: oregon
+    buildCommand: cd teacher/classroom-ai-main && chmod +x build.sh && ./build.sh
+    startCommand: cd teacher/classroom-ai-main/backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+  # ─── 4. Admin Portal (school admin app) ───
+  - type: web
+    name: codevidhya-admin
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: cd "Admin tool" && npm run install:all && npm run build
+    startCommand: cd "Admin tool" && npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: ADMIN_SETUP_KEY
+        value: codevidhya_admin_2024

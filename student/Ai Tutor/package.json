@@ -1,0 +1,10 @@
+{
+  "name": "ai-tutor",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install --include=dev",
+    "build": "cd client && npx vite build",
+    "start": "cd server && node server.js"
+  }
+}

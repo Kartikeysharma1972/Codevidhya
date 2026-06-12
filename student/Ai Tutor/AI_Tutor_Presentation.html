@@ -1,0 +1,2703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Tutor — Prototype Presentation | CodeVidhya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #EAF4FB;
+    --bg-2: #F7FBFE;
+    --primary: #5BA4CF;
+    --primary-deep: #2E86C1;
+    --primary-soft: #B3D9F2;
+    --primary-mist: #D6EEF8;
+    --ink: #0F2A3D;
+    --ink-2: #355368;
+    --muted: #6B8AA0;
+    --white: #FFFFFF;
+    --gold: #F2B33D;
+    --green: #3FBF7F;
+    --rose: #E26D7A;
+    --violet: #8E7AD9;
+    --shadow-sm: 0 4px 14px rgba(46, 134, 193, 0.08);
+    --shadow-md: 0 10px 30px rgba(46, 134, 193, 0.12);
+    --shadow-lg: 0 20px 50px rgba(46, 134, 193, 0.18);
+    --radius: 18px;
+    --radius-sm: 12px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  /* ============ AMBIENT BACKGROUND ============ */
+  .aurora {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(circle at 15% 20%, #B3D9F2 0%, transparent 35%),
+                      radial-gradient(circle at 85% 75%, #D6EEF8 0%, transparent 40%),
+                      radial-gradient(circle at 50% 50%, #EAF4FB 0%, transparent 50%);
+  }
+  .grid-overlay {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image: radial-gradient(circle, #5BA4CF 1px, transparent 1px);
+    background-size: 32px 32px;
+    opacity: 0.05;
+  }
+
+  /* ============ NAVIGATION ============ */
+  .topnav {
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.75);
+    border-bottom: 1px solid rgba(91, 164, 207, 0.15);
+    padding: 14px 28px;
+    display: flex; justify-content: space-between; align-items: center;
+    gap: 20px;
+  }
+  .brand {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700; font-size: 19px;
+    color: var(--ink);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .brand-mark {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    display: grid; place-items: center;
+    color: white; font-weight: 800; font-size: 15px;
+    box-shadow: 0 6px 16px rgba(46, 134, 193, 0.35);
+  }
+  .navlinks {
+    display: flex; gap: 4px; flex-wrap: wrap;
+  }
+  .navlinks a {
+    text-decoration: none;
+    color: var(--ink-2);
+    font-weight: 500; font-size: 13.5px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    transition: all 0.2s ease;
+  }
+  .navlinks a:hover {
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+  }
+  .nav-cta {
+    padding: 9px 18px;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white !important;
+    font-weight: 600 !important;
+    box-shadow: 0 6px 16px rgba(46, 134, 193, 0.25);
+  }
+  .nav-cta:hover { transform: translateY(-1px); }
+
+  /* ============ LAYOUT ============ */
+  main { position: relative; z-index: 1; }
+  section {
+    padding: 90px 28px;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  section.tight { padding: 60px 28px; }
+  h1, h2, h3, h4 {
+    font-family: 'Space Grotesk', sans-serif;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  h2 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+  .section-eyebrow {
+    display: inline-block;
+    padding: 6px 14px;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  .lead {
+    font-size: 17.5px;
+    color: var(--ink-2);
+    max-width: 760px;
+    margin-bottom: 48px;
+  }
+
+  /* ============ HERO ============ */
+  .hero {
+    padding: 70px 28px 80px;
+    max-width: 1240px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 60px;
+    align-items: center;
+    min-height: calc(100vh - 65px);
+  }
+  @media (max-width: 920px) {
+    .hero { grid-template-columns: 1fr; min-height: auto; }
+    .hero-visual { margin: 0 auto; }
+  }
+  @media (max-width: 480px) {
+    .hero-mini-row { grid-template-columns: 1fr; }
+    .vc-main { padding: 18px; }
+  }
+
+  .pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    background: rgba(255,255,255,0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(91, 164, 207, 0.3);
+    border-radius: 999px;
+    font-size: 13px; font-weight: 600;
+    color: var(--primary-deep);
+    margin-bottom: 22px;
+    animation: pulse-pill 3s ease-in-out infinite;
+  }
+  .pill .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 4px rgba(63, 191, 127, 0.18);
+  }
+  @keyframes pulse-pill {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-3px); }
+  }
+
+  .hero h1 {
+    font-size: clamp(40px, 6vw, 68px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 22px;
+  }
+  .gradient-text {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1, #1A5A8A);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero p.subtitle {
+    font-size: 19px;
+    color: var(--ink-2);
+    margin-bottom: 32px;
+    max-width: 560px;
+  }
+  .hero-meta {
+    display: flex; flex-wrap: wrap; gap: 18px;
+    margin-top: 28px;
+  }
+  .meta-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 14px; color: var(--ink-2); font-weight: 500;
+  }
+  .meta-item .ic {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 13px;
+  }
+
+  /* Hero visual: dashboard-style mock — clean stacked layout, no absolute positioning */
+  .hero-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: 520px;
+    margin-left: auto;
+    width: 100%;
+  }
+  .hero-mini-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .visual-card {
+    position: relative;
+    background: white;
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(91, 164, 207, 0.15);
+  }
+  .vc-main {
+    padding: 22px;
+    display: flex; flex-direction: column;
+    background: linear-gradient(180deg, #ffffff 0%, #F7FBFE 100%);
+  }
+  .vc-mini-1,
+  .vc-mini-2 {
+    padding: 14px 18px;
+  }
+
+  .chat-header {
+    display: flex; align-items: center; gap: 10px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #EAF4FB;
+    margin-bottom: 16px;
+  }
+  .chat-header .avatar {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white; font-weight: 700;
+    display: grid; place-items: center;
+    font-size: 14px;
+  }
+  .chat-header .title { font-weight: 600; font-size: 14px; }
+  .chat-header .sub { font-size: 11.5px; color: var(--muted); }
+  .chat-bubble {
+    padding: 12px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    max-width: 88%;
+    line-height: 1.55;
+  }
+  .bubble-user {
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+  }
+  .bubble-ai {
+    background: #F4F8FB;
+    color: var(--ink-2);
+    border-bottom-left-radius: 4px;
+    border: 1px solid #E5EFF6;
+  }
+  .typing {
+    display: inline-flex; gap: 4px; align-items: center;
+    color: var(--primary);
+  }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--primary);
+    animation: typing 1.2s ease-in-out infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.15s; }
+  .typing span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes typing {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+  .mini-stat .label {
+    font-size: 11px; color: var(--muted); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .mini-stat .val {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px; font-weight: 700;
+    color: var(--ink);
+    margin-top: 2px;
+  }
+  .mini-stat .trend {
+    font-size: 11.5px; color: var(--green); font-weight: 600;
+    margin-top: 2px;
+  }
+
+  /* ============ STATS STRIP ============ */
+  .stats-strip {
+    background: white;
+    border-radius: 24px;
+    padding: 40px;
+    margin: 0 28px;
+    max-width: 1180px;
+    margin: -30px auto 0;
+    position: relative;
+    z-index: 5;
+    box-shadow: var(--shadow-md);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 30px;
+  }
+  @media (max-width: 760px) { .stats-strip { grid-template-columns: repeat(2, 1fr); } }
+  .stat-cell { text-align: center; }
+  .stat-cell .num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: clamp(30px, 4vw, 44px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+  }
+  .stat-cell .lbl {
+    font-size: 13.5px; color: var(--muted);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+
+  /* ============ CARDS ============ */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+  }
+  .card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+    border-color: rgba(91, 164, 207, 0.3);
+  }
+  .card-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: grid; place-items: center;
+    font-size: 22px;
+    margin-bottom: 18px;
+    background: linear-gradient(135deg, var(--primary-mist), var(--primary-soft));
+    color: var(--primary-deep);
+    font-weight: 800;
+  }
+  .card h3 {
+    font-size: 19px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  .card p {
+    color: var(--ink-2);
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .card .features-list {
+    margin-top: 14px;
+    list-style: none;
+  }
+  .card .features-list li {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    padding: 6px 0;
+    padding-left: 22px;
+    position: relative;
+  }
+  .card .features-list li::before {
+    content: '✓';
+    position: absolute; left: 0; top: 6px;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .card-accent {
+    position: absolute;
+    top: 0; right: 0;
+    width: 100px; height: 100px;
+    border-radius: 50%;
+    opacity: 0.08;
+    background: linear-gradient(135deg, var(--primary), var(--primary-deep));
+    transform: translate(40%, -40%);
+  }
+
+  /* ============ PREREQUISITES ============ */
+  .prereq-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+  @media (max-width: 760px) { .prereq-grid { grid-template-columns: 1fr; } }
+  .prereq-block {
+    background: white;
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+  }
+  .prereq-block h3 {
+    font-size: 20px;
+    margin-bottom: 18px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .prereq-block h3 .badge {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: grid; place-items: center;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    font-size: 16px;
+  }
+  .prereq-list { list-style: none; }
+  .prereq-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid #F0F6FA;
+    font-size: 14.5px;
+    color: var(--ink-2);
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+  .prereq-list li:last-child { border-bottom: none; }
+  .prereq-list li strong { color: var(--ink); font-weight: 600; }
+  .prereq-list .ic {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    display: grid; place-items: center;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* ============ TABS ============ */
+  .tabs {
+    display: flex; gap: 8px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    padding: 6px;
+    background: white;
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+    width: fit-content;
+    max-width: 100%;
+  }
+  .tab {
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-2);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    transition: all 0.25s ease;
+    font-family: inherit;
+  }
+  .tab:hover { background: var(--primary-mist); color: var(--primary-deep); }
+  .tab.active {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    box-shadow: 0 4px 12px rgba(46, 134, 193, 0.25);
+  }
+  .tab-panel { display: none; animation: fadeIn 0.4s ease; }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============ FEATURE DETAIL ============ */
+  .feature-detail {
+    background: white;
+    border-radius: var(--radius);
+    padding: 36px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+    align-items: start;
+  }
+  @media (max-width: 880px) { .feature-detail { grid-template-columns: 1fr; } }
+  .feature-detail .title-row {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 8px;
+  }
+  .feature-detail .title-row .num {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px; font-weight: 800;
+    color: var(--primary);
+    width: 50px; height: 50px;
+    background: var(--primary-mist);
+    border-radius: 14px;
+    display: grid; place-items: center;
+  }
+  .feature-detail h3 { font-size: 26px; font-weight: 700; }
+  .feature-detail .desc {
+    color: var(--ink-2);
+    font-size: 15px;
+    margin: 14px 0 22px;
+  }
+  .feature-step {
+    display: flex; gap: 14px;
+    padding: 14px 0;
+    border-top: 1px solid #F0F6FA;
+  }
+  .feature-step:first-child { border-top: none; padding-top: 0; }
+  .feature-step .sn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    font-size: 13px; font-weight: 700;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .feature-step .body strong {
+    color: var(--ink);
+    font-size: 14.5px;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 3px;
+  }
+  .feature-step .body p {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+
+  /* Mock UI inside feature detail */
+  .mock-ui {
+    background: linear-gradient(180deg, #F7FBFE 0%, #EAF4FB 100%);
+    border-radius: 16px;
+    padding: 22px;
+    border: 1px solid rgba(91, 164, 207, 0.15);
+    min-height: 320px;
+  }
+  .mock-row {
+    display: flex; gap: 10px; align-items: center;
+    background: white;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    border: 1px solid #EAF4FB;
+  }
+  .mock-row .ico {
+    width: 28px; height: 28px;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    border-radius: 7px;
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 12px;
+    flex-shrink: 0;
+  }
+  .mock-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11.5px;
+    font-weight: 600;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+  }
+  .mock-bar {
+    background: white;
+    height: 26px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin: 6px 0;
+    border: 1px solid #EAF4FB;
+  }
+  .mock-bar .fill {
+    height: 100%;
+    background: linear-gradient(90deg, #5BA4CF, #2E86C1);
+    display: flex; align-items: center;
+    padding-left: 12px;
+    color: white; font-size: 12px; font-weight: 600;
+  }
+
+  /* ============ CHARTS ============ */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 860px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 28px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+  }
+  .chart-card h3 {
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+  .chart-card .sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 18px;
+  }
+  .chart-holder {
+    position: relative;
+    height: 280px;
+  }
+
+  /* ============ HOW IT WORKS ============ */
+  .steps-flow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    counter-reset: step;
+    position: relative;
+  }
+  @media (max-width: 980px) { .steps-flow { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 520px) { .steps-flow { grid-template-columns: 1fr; } }
+  .step-node {
+    background: white;
+    border-radius: var(--radius);
+    padding: 26px 20px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+    text-align: center;
+    position: relative;
+  }
+  .step-node .step-num {
+    width: 44px; height: 44px;
+    margin: 0 auto 14px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px rgba(46, 134, 193, 0.3);
+  }
+  .step-node h4 {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .step-node p {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.55;
+  }
+
+  /* ============ COMPARISON TABLE ============ */
+  .compare-wrap {
+    background: white;
+    border-radius: var(--radius);
+    padding: 8px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(91, 164, 207, 0.15);
+    overflow-x: auto;
+  }
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+  }
+  .compare-table th, .compare-table td {
+    padding: 16px 20px;
+    text-align: left;
+    border-bottom: 1px solid #F0F6FA;
+    font-size: 14px;
+  }
+  .compare-table th {
+    background: linear-gradient(180deg, #F7FBFE 0%, #EAF4FB 100%);
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 13.5px;
+    position: sticky; top: 0;
+  }
+  .compare-table th:first-child { border-top-left-radius: 12px; }
+  .compare-table th:last-child { border-top-right-radius: 12px; }
+  .compare-table tr:last-child td { border-bottom: none; }
+  .compare-table td:first-child {
+    font-weight: 600;
+    color: var(--ink);
+  }
+  .yes {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--green); font-weight: 600;
+    font-size: 13.5px;
+  }
+  .no {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--rose); font-weight: 600;
+    font-size: 13.5px;
+  }
+  .partial {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--gold); font-weight: 600;
+    font-size: 13.5px;
+  }
+  .col-us {
+    background: linear-gradient(180deg, rgba(91,164,207,0.08), rgba(91,164,207,0.02));
+  }
+
+  /* ============ DIFFERENTIATORS ============ */
+  .diff-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 22px;
+  }
+  .diff-card {
+    background: white;
+    border-radius: var(--radius);
+    padding: 26px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .diff-card .ribbon {
+    position: absolute; top: 18px; right: -32px;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    font-size: 10.5px;
+    font-weight: 700;
+    padding: 4px 36px;
+    transform: rotate(35deg);
+    letter-spacing: 0.06em;
+  }
+  .diff-card h4 {
+    font-size: 16.5px;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .diff-card p {
+    font-size: 13.5px;
+    color: var(--ink-2);
+    line-height: 1.6;
+  }
+
+  /* ============ ROADMAP ============ */
+  .roadmap {
+    position: relative;
+    padding-left: 40px;
+  }
+  .roadmap::before {
+    content: '';
+    position: absolute;
+    left: 14px; top: 8px; bottom: 8px;
+    width: 3px;
+    background: linear-gradient(180deg, #5BA4CF, #B3D9F2, #D6EEF8);
+    border-radius: 3px;
+  }
+  .road-item {
+    position: relative;
+    background: white;
+    border-radius: var(--radius);
+    padding: 22px 26px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(91, 164, 207, 0.12);
+  }
+  .road-item::before {
+    content: '';
+    position: absolute;
+    left: -33px; top: 28px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid var(--primary);
+    box-shadow: 0 0 0 4px rgba(91, 164, 207, 0.18);
+  }
+  .road-item .timing {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--primary-mist);
+    color: var(--primary-deep);
+    margin-bottom: 10px;
+    letter-spacing: 0.04em;
+  }
+  .road-item.q3 .timing { background: #FFF4DC; color: #B8821C; }
+  .road-item.q4 .timing { background: #E8F8EF; color: #1E8C50; }
+  .road-item.q5 .timing { background: #F0E9FB; color: #6B4FB8; }
+  .road-item h4 { font-size: 17px; margin-bottom: 8px; }
+  .road-item p { font-size: 14px; color: var(--ink-2); }
+  .road-item .features-mini {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;
+  }
+  .road-item .features-mini span {
+    padding: 4px 10px;
+    background: #F4F8FB;
+    border-radius: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+
+  /* ============ VISION SECTION ============ */
+  .vision-card {
+    background: linear-gradient(135deg, #2E86C1 0%, #5BA4CF 50%, #7EC8E3 100%);
+    border-radius: 28px;
+    padding: 60px;
+    color: white;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+  }
+  .vision-card::before, .vision-card::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .vision-card::before {
+    width: 320px; height: 320px;
+    top: -160px; right: -100px;
+  }
+  .vision-card::after {
+    width: 240px; height: 240px;
+    bottom: -120px; left: -60px;
+  }
+  .vision-card .v-eyebrow {
+    display: inline-block;
+    padding: 6px 16px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 22px;
+    backdrop-filter: blur(6px);
+    position: relative; z-index: 1;
+  }
+  .vision-card h2 {
+    color: white;
+    font-size: clamp(28px, 4.5vw, 44px);
+    max-width: 880px;
+    margin: 0 auto 22px;
+    line-height: 1.25;
+    position: relative; z-index: 1;
+  }
+  .vision-card p {
+    font-size: 17px;
+    max-width: 760px;
+    margin: 0 auto;
+    opacity: 0.95;
+    position: relative; z-index: 1;
+  }
+  .vision-pillars {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-top: 40px;
+    position: relative; z-index: 1;
+  }
+  @media (max-width: 720px) { .vision-pillars { grid-template-columns: 1fr; } }
+  .vision-pillar {
+    background: rgba(255,255,255,0.13);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,0.25);
+    padding: 22px 18px;
+    border-radius: 16px;
+    text-align: left;
+  }
+  .vision-pillar .icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+  .vision-pillar h4 {
+    color: white;
+    font-size: 15px;
+    margin-bottom: 6px;
+  }
+  .vision-pillar p {
+    color: rgba(255,255,255,0.9);
+    font-size: 13px;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* ============ INSIDE THE APP GALLERY ============ */
+  .gallery-hero {
+    background: white;
+    border-radius: 22px;
+    padding: 8px;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid rgba(91, 164, 207, 0.18);
+    margin-bottom: 28px;
+    overflow: hidden;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 28px;
+  }
+  @media (max-width: 880px) { .gallery-grid { grid-template-columns: 1fr; } }
+
+  .app-shot {
+    background: white;
+    border-radius: 18px;
+    box-shadow: var(--shadow-md);
+    border: 1px solid rgba(91, 164, 207, 0.15);
+    overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .app-shot:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-lg);
+  }
+  .app-shot .chrome {
+    background: linear-gradient(180deg, #F7FBFE 0%, #EAF4FB 100%);
+    padding: 11px 16px;
+    display: flex; align-items: center; gap: 10px;
+    border-bottom: 1px solid #E5EFF6;
+  }
+  .app-shot .chrome .dots {
+    display: flex; gap: 6px;
+  }
+  .app-shot .chrome .dot-c {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .app-shot .chrome .dot-c.r { background: #FF6058; }
+  .app-shot .chrome .dot-c.y { background: #FFBC2E; }
+  .app-shot .chrome .dot-c.g { background: #26C940; }
+  .app-shot .chrome .url {
+    flex: 1;
+    background: white;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11.5px;
+    color: var(--muted);
+    font-family: 'Space Grotesk', monospace;
+    border: 1px solid #E5EFF6;
+    text-align: center;
+  }
+  .app-shot .shot-body {
+    padding: 22px;
+    background: linear-gradient(180deg, #FAFCFE 0%, #F4F8FB 100%);
+    min-height: 380px;
+  }
+  .app-shot .caption {
+    padding: 16px 22px 20px;
+    border-top: 1px solid #EAF4FB;
+    background: white;
+  }
+  .app-shot .caption .lbl {
+    font-size: 11px;
+    color: var(--primary-deep);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 4px;
+  }
+  .app-shot .caption h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .app-shot .caption p {
+    font-size: 13px;
+    color: var(--ink-2);
+    line-height: 1.5;
+  }
+
+  /* App sidebar mimic */
+  .app-frame {
+    display: grid;
+    grid-template-columns: 64px 1fr;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #EAF4FB;
+    min-height: 340px;
+  }
+  .app-sidebar {
+    background: linear-gradient(180deg, #0F2A3D 0%, #1A3F58 100%);
+    padding: 14px 8px;
+    display: flex; flex-direction: column;
+    gap: 10px;
+    align-items: center;
+  }
+  .app-sidebar .logo {
+    width: 38px; height: 38px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    font-weight: 800;
+    font-size: 14px;
+    display: grid; place-items: center;
+    margin-bottom: 6px;
+    box-shadow: 0 6px 14px rgba(46, 134, 193, 0.4);
+  }
+  .app-sidebar .nav-ic {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: rgba(255,255,255,0.06);
+    display: grid; place-items: center;
+    color: rgba(255,255,255,0.55);
+    font-size: 16px;
+  }
+  .app-sidebar .nav-ic.active {
+    background: rgba(91, 164, 207, 0.25);
+    color: white;
+  }
+  .app-content {
+    padding: 18px;
+    overflow: hidden;
+  }
+
+  /* Tool cards in dashboard mockup */
+  .tool-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .tool-card-mini {
+    background: white;
+    border: 1px solid #EAF4FB;
+    border-radius: 12px;
+    padding: 12px;
+    position: relative;
+  }
+  .tool-card-mini .ic-box {
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    display: grid; place-items: center;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  .tc-sky .ic-box { background: linear-gradient(135deg, #E0F2FE, #BAE6FD); color: #0284C7; }
+  .tc-emerald .ic-box { background: linear-gradient(135deg, #D1FAE5, #A7F3D0); color: #059669; }
+  .tc-violet .ic-box { background: linear-gradient(135deg, #EDE9FE, #DDD6FE); color: #7C3AED; }
+  .tc-amber .ic-box { background: linear-gradient(135deg, #FEF3C7, #FDE68A); color: #D97706; }
+  .tool-card-mini .tc-title {
+    font-size: 12px; font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .tool-card-mini .tc-desc {
+    font-size: 10.5px;
+    color: var(--muted);
+    line-height: 1.45;
+  }
+  .tool-card-mini .tc-pill {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 9px; font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .tc-sky .tc-pill { background: #E0F2FE; color: #0369A1; }
+  .tc-emerald .tc-pill { background: #D1FAE5; color: #047857; }
+  .tc-violet .tc-pill { background: #EDE9FE; color: #6D28D9; }
+  .tc-amber .tc-pill { background: #FEF3C7; color: #B45309; }
+
+  /* Mock test timer + question */
+  .mt-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 14px;
+  }
+  .mt-timer {
+    background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+    color: #B45309;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 12.5px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mt-progress {
+    height: 6px; background: #EAF4FB;
+    border-radius: 999px; overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .mt-progress .mt-fill {
+    height: 100%;
+    width: 48%;
+    background: linear-gradient(90deg, #5BA4CF, #2E86C1);
+    border-radius: 999px;
+  }
+  .mt-q {
+    background: white; border-radius: 11px;
+    padding: 14px; border: 1px solid #EAF4FB;
+    font-size: 12.5px; color: var(--ink);
+    margin-bottom: 10px; font-weight: 600;
+    line-height: 1.5;
+  }
+  .mt-opt {
+    background: white; border-radius: 9px;
+    padding: 10px 14px;
+    border: 1px solid #EAF4FB;
+    font-size: 12px;
+    margin-bottom: 7px;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--ink-2);
+    transition: all 0.2s ease;
+  }
+  .mt-opt .opt-letter {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: #EAF4FB;
+    color: var(--primary-deep);
+    font-weight: 700; font-size: 11px;
+    display: grid; place-items: center;
+  }
+  .mt-opt.selected {
+    background: linear-gradient(90deg, #DBEAFE, #BFDBFE);
+    border-color: #5BA4CF;
+    color: var(--primary-deep);
+    font-weight: 600;
+  }
+  .mt-opt.selected .opt-letter {
+    background: var(--primary-deep);
+    color: white;
+  }
+
+  /* Result analytics */
+  .result-hero {
+    background: linear-gradient(135deg, #ECFDF5 0%, #D1FAE5 100%);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    margin-bottom: 12px;
+    border: 1px solid #A7F3D0;
+  }
+  .result-hero .big {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: #047857;
+    line-height: 1;
+  }
+  .result-hero .lbl-r {
+    font-size: 11px;
+    color: #065F46;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 3px;
+  }
+  .badge-row {
+    display: flex; gap: 8px;
+    margin-bottom: 12px;
+  }
+  .res-badge {
+    flex: 1;
+    background: white;
+    border-radius: 9px;
+    padding: 9px;
+    text-align: center;
+    border: 1px solid #EAF4FB;
+  }
+  .res-badge .val-r {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .res-badge .lbl-r {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 1px;
+  }
+
+  /* Focus area tabs */
+  .focus-tabs {
+    display: flex; gap: 4px;
+    background: white; padding: 4px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+    border: 1px solid #EAF4FB;
+  }
+  .focus-tab {
+    flex: 1;
+    padding: 7px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: center;
+    border-radius: 7px;
+  }
+  .focus-tab.active {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+  }
+  .mindmap-node {
+    display: inline-block;
+    padding: 5px 11px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    margin: 3px;
+  }
+  .mn-root {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    padding: 7px 16px;
+    font-size: 12px;
+  }
+  .mn-l1 { background: #DBEAFE; color: #1E40AF; }
+  .mn-l2 { background: #EAF4FB; color: var(--primary-deep); }
+
+  /* Project ideas */
+  .proj-card-mini {
+    background: white;
+    border-radius: 11px;
+    padding: 12px;
+    border: 1px solid #EAF4FB;
+    margin-bottom: 9px;
+    display: flex; gap: 11px;
+  }
+  .proj-card-mini .p-num {
+    width: 30px; height: 30px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #EDE9FE, #DDD6FE);
+    color: #7C3AED;
+    font-weight: 800; font-size: 13px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .proj-card-mini .p-title {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .proj-card-mini .p-meta {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .proj-card-mini .p-tag {
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
+    background: #F4F8FB;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .proj-card-mini .p-tag.effort-low { background: #D1FAE5; color: #047857; }
+  .proj-card-mini .p-tag.effort-med { background: #FEF3C7; color: #B45309; }
+
+  /* Chat / Concept Explainer mock */
+  .ce-msg-user {
+    background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+    color: #1E3A8A;
+    padding: 9px 13px;
+    border-radius: 12px 12px 4px 12px;
+    font-size: 12px;
+    margin-left: auto;
+    max-width: 78%;
+    margin-bottom: 8px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .ce-msg-ai {
+    background: white;
+    color: var(--ink-2);
+    padding: 11px 13px;
+    border-radius: 12px 12px 12px 4px;
+    font-size: 12px;
+    max-width: 88%;
+    margin-bottom: 8px;
+    border: 1px solid #EAF4FB;
+    line-height: 1.55;
+  }
+  .ce-msg-ai strong { color: var(--ink); }
+  .ce-input {
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #EAF4FB;
+    padding: 9px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  .ce-input-ico {
+    width: 24px; height: 24px;
+    border-radius: 6px;
+    background: #EAF4FB;
+    color: var(--primary-deep);
+    display: grid; place-items: center;
+    font-size: 12px;
+  }
+
+  /* Doc summarizer mock */
+  .ds-upload {
+    background: white;
+    border: 2px dashed #BAE6FD;
+    border-radius: 11px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  .ds-upload .icon-big {
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    margin: 0 auto 7px;
+    background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+    color: var(--primary-deep);
+    display: grid; place-items: center;
+    font-size: 18px;
+  }
+  .ds-modes {
+    display: flex; gap: 5px;
+    margin-bottom: 10px;
+  }
+  .ds-mode {
+    flex: 1;
+    background: white;
+    border: 1px solid #EAF4FB;
+    border-radius: 7px;
+    padding: 7px;
+    text-align: center;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--ink-2);
+  }
+  .ds-mode.active {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    border-color: var(--primary-deep);
+  }
+
+  /* Login screen mock */
+  .login-card {
+    background: white;
+    border-radius: 14px;
+    padding: 26px 22px;
+    border: 1px solid #EAF4FB;
+    max-width: 280px;
+    margin: 18px auto 0;
+    text-align: center;
+  }
+  .login-card h5 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  .login-card .sub-l {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .login-field {
+    background: #F4F8FB;
+    border: 1px solid #EAF4FB;
+    border-radius: 8px;
+    padding: 9px 11px;
+    margin-bottom: 7px;
+    text-align: left;
+    font-size: 11.5px;
+    color: var(--ink-2);
+    display: flex; align-items: center; gap: 7px;
+  }
+  .login-field .l-ico {
+    color: var(--primary-deep);
+    font-weight: 700;
+  }
+  .login-btn {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+    padding: 9px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    margin-top: 6px;
+    box-shadow: 0 6px 14px rgba(46, 134, 193, 0.25);
+  }
+  .class-pills {
+    display: flex; flex-wrap: wrap; gap: 5px;
+    justify-content: center;
+    margin-top: 10px;
+  }
+  .class-pill {
+    padding: 4px 10px;
+    background: #EAF4FB;
+    color: var(--primary-deep);
+    border-radius: 6px;
+    font-size: 10.5px;
+    font-weight: 600;
+  }
+  .class-pill.active {
+    background: linear-gradient(135deg, #5BA4CF, #2E86C1);
+    color: white;
+  }
+
+  /* ============ FOOTER ============ */
+  footer {
+    background: var(--ink);
+    color: white;
+    padding: 60px 28px 30px;
+    margin-top: 80px;
+    position: relative;
+    z-index: 1;
+  }
+  .footer-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+  .footer-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  @media (max-width: 760px) { .footer-top { grid-template-columns: 1fr; } }
+  footer h4 {
+    color: white;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 16px;
+    font-weight: 700;
+  }
+  footer p, footer li {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  footer ul { list-style: none; }
+  .footer-bottom {
+    padding-top: 24px;
+    display: flex; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ============ ANIMATIONS ============ */
+  [data-reveal] {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+  }
+  [data-reveal].in {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Print friendly */
+  @media print {
+    .topnav { position: relative; }
+    .aurora, .grid-overlay { display: none; }
+    section { page-break-inside: avoid; padding: 40px 20px; }
+    .card, .chart-card, .app-shot, .step-node, .feature-detail, .vision-card, .road-item, .prereq-block {
+      break-inside: avoid;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="aurora"></div>
+<div class="grid-overlay"></div>
+
+<nav class="topnav">
+  <div class="brand">
+    <div class="brand-mark">AI</div>
+    <span>AI Tutor <span style="color: var(--muted); font-weight: 500; font-size: 13px;">· by CodeVidhya</span></span>
+  </div>
+  <div class="navlinks">
+    <a href="#overview">Overview</a>
+    <a href="#prereq">Prerequisites</a>
+    <a href="#features">Features</a>
+    <a href="#preview">Inside the App</a>
+    <a href="#how">How to Use</a>
+    <a href="#compare">vs GPT</a>
+    <a href="#future">Roadmap</a>
+    <a href="#vision" class="nav-cta">Vision</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ============ HERO ============ -->
+  <section class="hero">
+    <div data-reveal>
+      <div class="pill"><span class="dot"></span> Prototype · Built for CBSE Classes 1–12</div>
+      <h1>Your <span class="gradient-text">personalised</span> AI study partner — built for Indian classrooms.</h1>
+      <p class="subtitle">A grade-adaptive learning platform that explains, summarises, generates projects, and trains students for exams — every response tuned to the student's class, curriculum, and learning depth.</p>
+      <div class="hero-meta">
+        <div class="meta-item"><div class="ic">4</div> Core Tools</div>
+        <div class="meta-item"><div class="ic">12</div> Class Levels</div>
+        <div class="meta-item"><div class="ic">7</div> CBSE Subjects</div>
+        <div class="meta-item"><div class="ic">14</div> Question Types</div>
+      </div>
+    </div>
+
+    <div class="hero-visual" data-reveal>
+      <div class="hero-mini-row">
+        <div class="visual-card vc-mini-1">
+          <div class="mini-stat">
+            <div class="label">Mock Test Score</div>
+            <div class="val">22 / 25</div>
+            <div class="trend">▲ 88% accuracy</div>
+          </div>
+        </div>
+
+        <div class="visual-card vc-mini-2">
+          <div class="mini-stat">
+            <div class="label">Adaptive Level</div>
+            <div class="val" style="color: var(--primary-deep);">Class 8 · Intermediate</div>
+            <div class="trend" style="color: var(--violet);">● Auto-calibrated</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="visual-card vc-main">
+        <div class="chat-header">
+          <div class="avatar">AI</div>
+          <div>
+            <div class="title">Concept Explainer</div>
+            <div class="sub">Class 8 · Science · Light</div>
+          </div>
+        </div>
+        <div class="chat-bubble bubble-user">Why does a pencil look bent in water?</div>
+        <div class="chat-bubble bubble-ai">Great question! It's because of <strong>refraction</strong> — light bends when it moves between two media (air → water) because they have different optical densities. Think of it like a car turning when one wheel hits sand…</div>
+        <div class="chat-bubble bubble-ai" style="background: white; border: 1px dashed var(--primary);">
+          <div class="typing">Generating diagram <span></span><span></span><span></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STATS ============ -->
+  <div class="stats-strip" data-reveal>
+    <div class="stat-cell"><div class="num">12</div><div class="lbl">Class Levels 1–12</div></div>
+    <div class="stat-cell"><div class="num">100+</div><div class="lbl">CBSE Chapters Indexed</div></div>
+    <div class="stat-cell"><div class="num">4</div><div class="lbl">Integrated AI Tools</div></div>
+    <div class="stat-cell"><div class="num">1</div><div class="lbl">Unified Student Dashboard</div></div>
+  </div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section id="overview">
+    <div data-reveal>
+      <span class="section-eyebrow">What this app is</span>
+      <h2>An AI tutor that <span class="gradient-text">understands which class</span> the student is in.</h2>
+      <p class="lead">Most AI chat tools are built for adults. <strong>AI Tutor</strong> is built for school students — every answer is grade-calibrated, every test follows CBSE structure, every project idea respects the syllabus. The student logs in, picks a chapter, and the AI behaves like a tutor who already knows the textbook.</p>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card" data-reveal>
+        <div class="card-accent"></div>
+        <div class="card-icon">🎯</div>
+        <h3>Grade-Adaptive AI</h3>
+        <p>The student's class is locked at signup and travels with every AI call. A Class 3 student gets stories and analogies. A Class 12 student gets JEE/NEET-level depth.</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="card-accent"></div>
+        <div class="card-icon">📚</div>
+        <h3>CBSE Curriculum-Locked</h3>
+        <p>Subjects, chapters, and topics come from the official CBSE/NCERT structure — so the AI never wanders off-syllabus or makes up content.</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="card-accent"></div>
+        <div class="card-icon">🧪</div>
+        <h3>Real Exam Engine</h3>
+        <p>Mock tests follow CBSE rules — question counts, time limits, difficulty splits, even question types vary per grade group. Not a generic quiz tool.</p>
+      </div>
+      <div class="card" data-reveal>
+        <div class="card-accent"></div>
+        <div class="card-icon">💡</div>
+        <h3>End-to-End Toolkit</h3>
+        <p>Doubt → explanation → notes → project → mock test → analytics — all four tools live in one signed-in dashboard with chat history per tool.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PREREQUISITES ============ -->
+  <section id="prereq">
+    <div data-reveal>
+      <span class="section-eyebrow">Prerequisites</span>
+      <h2>What you need to run AI Tutor.</h2>
+      <p class="lead">Setup is light. The app runs in any modern browser — no installs for students. Hosting needs are minimal and the entire stack can run on a single web service.</p>
+    </div>
+
+    <div class="prereq-grid">
+      <div class="prereq-block" data-reveal>
+        <h3><span class="badge">👤</span> For Students (End Users)</h3>
+        <ul class="prereq-list">
+          <li><span class="ic">1</span><div><strong>A modern browser</strong> — Chrome, Edge, Safari or Firefox (last 2 versions). No app install.</div></li>
+          <li><span class="ic">2</span><div><strong>Internet connection</strong> — required for AI calls and saving sessions to the cloud.</div></li>
+          <li><span class="ic">3</span><div><strong>An email address</strong> for signup. Parents can create the account for younger children.</div></li>
+          <li><span class="ic">4</span><div><strong>Knowledge of their class</strong> (1–12) — picked once at signup, can be changed any time from the profile.</div></li>
+          <li><span class="ic">5</span><div><strong>Any device</strong> — desktop, laptop, tablet or mobile. The interface is fully responsive.</div></li>
+        </ul>
+      </div>
+
+      <div class="prereq-block" data-reveal>
+        <h3><span class="badge">🏫</span> For Schools & Parents</h3>
+        <ul class="prereq-list">
+          <li><span class="ic">1</span><div><strong>One account per child</strong> — locked to their CBSE class so every answer matches their syllabus.</div></li>
+          <li><span class="ic">2</span><div><strong>Zero installation overhead</strong> — works directly from the browser, nothing to set up on lab machines.</div></li>
+          <li><span class="ic">3</span><div><strong>Saved history per student</strong> — every chat, summary, project and test stays available for revision.</div></li>
+          <li><span class="ic">4</span><div><strong>Safe scope</strong> — AI is bounded by the CBSE chapter list, so the child never sees off-syllabus content.</div></li>
+          <li><span class="ic">5</span><div><strong>Works on shared devices</strong> — students log in/out cleanly, sessions are private and grade-locked.</div></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURES IN DETAIL ============ -->
+  <section id="features">
+    <div data-reveal>
+      <span class="section-eyebrow">Features in detail</span>
+      <h2>Four tools. <span class="gradient-text">One signed-in workspace.</span></h2>
+      <p class="lead">Click each tool to see how it works — the inputs, the steps the student takes, and what the AI returns. Every tool inherits the student's grade automatically.</p>
+    </div>
+
+    <div class="tabs" data-reveal>
+      <button class="tab active" data-tab="t1">🎓 Concept Explainer</button>
+      <button class="tab" data-tab="t2">📄 Document Summariser</button>
+      <button class="tab" data-tab="t3">💡 Project Generator</button>
+      <button class="tab" data-tab="t4">📝 Exam Preparation</button>
+    </div>
+
+    <!-- TAB 1 -->
+    <div class="tab-panel active" id="t1">
+      <div class="feature-detail">
+        <div>
+          <div class="title-row">
+            <div class="num">01</div>
+            <h3>Concept Explainer</h3>
+          </div>
+          <p class="desc">A chat that already knows the student's class, subject and chapter — and explains anything from that scope, at the depth the student picks.</p>
+          <div class="feature-step">
+            <div class="sn">1</div>
+            <div class="body"><strong>Pick subject & chapter</strong><p>From the student's grade-specific curriculum dropdown (auto-loaded from CBSE data).</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">2</div>
+            <div class="body"><strong>Choose explanation level</strong><p>Beginner (CBSE standard), Intermediate (deeper), or Advanced (competitive-exam rigour).</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">3</div>
+            <div class="body"><strong>Ask via text, image, or file</strong><p>Type a question, upload a textbook screenshot, or attach a PDF — AI handles all three.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">4</div>
+            <div class="body"><strong>Get a structured answer</strong><p>Simplified explanation + real-world analogies + diagram/image + suggested next step.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">5</div>
+            <div class="body"><strong>Continue the conversation</strong><p>Full multi-turn context. Every chat saves to the sidebar — reopen anytime.</p></div>
+          </div>
+        </div>
+        <div class="mock-ui">
+          <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+            <span class="mock-tag">Subject: Science</span>
+            <span class="mock-tag">Chapter: Light</span>
+            <span class="mock-tag" style="background:#FFF4DC; color:#B8821C;">Level: Intermediate</span>
+          </div>
+          <div class="mock-row"><div class="ico">Q</div>Explain refraction with a daily-life example</div>
+          <div class="mock-row" style="background:#F4F8FB; flex-direction:column; align-items:flex-start;">
+            <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;"><div class="ico" style="background:linear-gradient(135deg,#5BA4CF,#2E86C1); color:white;">AI</div><strong style="font-size:13px;">Response</strong></div>
+            <div style="font-size:12.5px; line-height:1.6; color:var(--ink-2);">Light bends when it passes between water and air. That's why a straw in a glass looks broken at the surface — the part underwater appears shifted from where it actually is.</div>
+          </div>
+          <div class="mock-row"><div class="ico">📷</div>Image upload supported</div>
+          <div class="mock-row"><div class="ico">📎</div>PDF / DOC / TXT supported</div>
+          <div class="mock-row"><div class="ico">💬</div>3 follow-up turns in this session</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2 -->
+    <div class="tab-panel" id="t2">
+      <div class="feature-detail">
+        <div>
+          <div class="title-row">
+            <div class="num">02</div>
+            <h3>Document Summariser</h3>
+          </div>
+          <p class="desc">Upload textbook chapters, scanned notes, or paste long passages — get a summary tuned to the student's reading level.</p>
+          <div class="feature-step">
+            <div class="sn">1</div>
+            <div class="body"><strong>Provide material</strong><p>PDF upload, image (with OCR), or paste up to 5,000 words.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">2</div>
+            <div class="body"><strong>Pick a mode</strong><p>Full Summary · Key Points (bullets) · Specific Search (ask a question of the doc).</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">3</div>
+            <div class="body"><strong>AI extracts grade-appropriate output</strong><p>Class 4 gets simple sentences. Class 11 gets structured technical summary.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">4</div>
+            <div class="body"><strong>Saved to history</strong><p>Re-open the same upload anytime, switch modes, or ask follow-up questions.</p></div>
+          </div>
+        </div>
+        <div class="mock-ui">
+          <div style="background:white; border:2px dashed var(--primary); border-radius:14px; padding:24px; text-align:center; margin-bottom:14px;">
+            <div style="font-size:30px; margin-bottom:8px;">📄</div>
+            <div style="font-size:13px; font-weight:600; color:var(--primary-deep);">Drop PDF / image here</div>
+            <div style="font-size:12px; color:var(--muted); margin-top:4px;">or paste text below</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-bottom:12px;">
+            <span class="mock-tag" style="background:var(--primary); color:white;">Full Summary</span>
+            <span class="mock-tag">Key Points</span>
+            <span class="mock-tag">Search</span>
+          </div>
+          <div class="mock-row" style="flex-direction:column; align-items:flex-start;">
+            <strong style="font-size:13px; margin-bottom:6px;">Output preview</strong>
+            <div style="font-size:12px; color:var(--ink-2); line-height:1.55;">• Photosynthesis converts sunlight + CO₂ + water into glucose<br>• Happens in chloroplasts<br>• Releases oxygen as a by-product…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3 -->
+    <div class="tab-panel" id="t3">
+      <div class="feature-detail">
+        <div>
+          <div class="title-row">
+            <div class="num">03</div>
+            <h3>Project Idea Generator</h3>
+          </div>
+          <p class="desc">Custom project ideas that match the student's grade, subject, chapter and the format they want to build in.</p>
+          <div class="feature-step">
+            <div class="sn">1</div>
+            <div class="body"><strong>Pick subject & chapter (optional topic)</strong><p>Project ideas can be scoped down to a single chapter.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">2</div>
+            <div class="body"><strong>Choose project type</strong><p>Physical model · Chart/Poster · PPT · Website/App · Science experiment · Research report.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">3</div>
+            <div class="body"><strong>Get 4 unique ideas</strong><p>Each with title, description, materials list, effort level, and CBSE relevance tag.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">4</div>
+            <div class="body"><strong>Regenerate or refine</strong><p>Don't like the set? Generate again with a tweaked prompt.</p></div>
+          </div>
+        </div>
+        <div class="mock-ui">
+          <div class="mock-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <span class="mock-tag">Physical Model</span>
+            <strong style="font-size:13.5px;">Working Volcano with Lava Flow</strong>
+            <div style="font-size:12px; color:var(--ink-2);">Materials: clay, baking soda, vinegar, food colouring · Effort: Medium</div>
+          </div>
+          <div class="mock-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <span class="mock-tag" style="background:#FFF4DC; color:#B8821C;">Website/App</span>
+            <strong style="font-size:13.5px;">Plant Growth Tracker (Class 6 Science)</strong>
+            <div style="font-size:12px; color:var(--ink-2);">Materials: Google Sites, photos · Effort: Low</div>
+          </div>
+          <div class="mock-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
+            <span class="mock-tag" style="background:#E8F8EF; color:#1E8C50;">PPT</span>
+            <strong style="font-size:13.5px;">Acids, Bases & Salts — Visual Guide</strong>
+            <div style="font-size:12px; color:var(--ink-2);">Materials: PowerPoint · Effort: Low</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4 -->
+    <div class="tab-panel" id="t4">
+      <div class="feature-detail">
+        <div>
+          <div class="title-row">
+            <div class="num">04</div>
+            <h3>Exam Preparation</h3>
+          </div>
+          <p class="desc">Two modes: a full Mock Test engine that follows CBSE structure, and a Focus Area for deep concept study.</p>
+          <div class="feature-step">
+            <div class="sn">1</div>
+            <div class="body"><strong>Pick subject + chapters</strong><p>Multi-select chapters to mix into one test.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">2</div>
+            <div class="body"><strong>Choose Mock Test or Focus Area</strong><p>Test = timed, scored. Focus Area = concept + mind map + practice cards.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">3</div>
+            <div class="body"><strong>Mock Test runs by CBSE rules</strong><p>Question count, time, difficulty split and types all vary per grade group automatically.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">4</div>
+            <div class="body"><strong>Submit → Get analytics</strong><p>Score, accuracy %, topic-wise breakdown, weak areas, percentile (Class 9–12), per-question explanations.</p></div>
+          </div>
+          <div class="feature-step">
+            <div class="sn">5</div>
+            <div class="body"><strong>Focus Area = revision powerhouse</strong><p>Full concept · all formulas · mind map · 6 frequently-asked exam questions · 6 click-to-reveal practice cards.</p></div>
+          </div>
+        </div>
+        <div class="mock-ui">
+          <div style="display:flex; gap:14px; margin-bottom:14px;">
+            <div style="background:white; padding:14px; border-radius:12px; flex:1; text-align:center; border:1px solid #EAF4FB;">
+              <div style="font-size:22px; font-weight:800; color:var(--primary-deep); font-family:'Space Grotesk';">25</div>
+              <div style="font-size:11px; color:var(--muted);">Questions</div>
+            </div>
+            <div style="background:white; padding:14px; border-radius:12px; flex:1; text-align:center; border:1px solid #EAF4FB;">
+              <div style="font-size:22px; font-weight:800; color:var(--primary-deep); font-family:'Space Grotesk';">40m</div>
+              <div style="font-size:11px; color:var(--muted);">Duration</div>
+            </div>
+            <div style="background:white; padding:14px; border-radius:12px; flex:1; text-align:center; border:1px solid #EAF4FB;">
+              <div style="font-size:22px; font-weight:800; color:var(--green); font-family:'Space Grotesk';">88%</div>
+              <div style="font-size:11px; color:var(--muted);">Accuracy</div>
+            </div>
+          </div>
+          <div style="font-size:12px; font-weight:600; margin-bottom:6px; color:var(--ink-2);">Topic-wise accuracy</div>
+          <div class="mock-bar"><div class="fill" style="width: 92%;">Algebra · 92%</div></div>
+          <div class="mock-bar"><div class="fill" style="width: 84%; background:linear-gradient(90deg, #5BA4CF, #2E86C1);">Geometry · 84%</div></div>
+          <div class="mock-bar"><div class="fill" style="width: 45%; background:linear-gradient(90deg, #E26D7A, #D14A5A);">Trigonometry · 45% ⚠</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INSIDE THE APP ============ -->
+  <section id="preview">
+    <div data-reveal>
+      <span class="section-eyebrow">Inside the App</span>
+      <h2>A look at what the student <span class="gradient-text">actually sees</span>.</h2>
+      <p class="lead">Every screen is built around one promise — the AI already knows the student's class. Here is how that promise plays out across the app: signup, dashboard, doubt chat, mock test, results, projects.</p>
+    </div>
+
+    <!-- Hero shot: Dashboard -->
+    <div class="gallery-hero" data-reveal>
+      <div class="app-shot" style="box-shadow:none; border:none;">
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">aitutor.codevidhya.in / dashboard</div>
+        </div>
+        <div class="shot-body" style="padding: 18px;">
+          <div class="app-frame">
+            <div class="app-sidebar">
+              <div class="logo">AI</div>
+              <div class="nav-ic active">🏠</div>
+              <div class="nav-ic">📚</div>
+              <div class="nav-ic">📄</div>
+              <div class="nav-ic">💡</div>
+              <div class="nav-ic">📝</div>
+            </div>
+            <div class="app-content">
+              <div style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border-radius: 12px; padding: 14px 18px; border: 1px solid #BFDBFE; margin-bottom: 14px;">
+                <div style="font-size: 10.5px; color: var(--primary-deep); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;">Welcome back</div>
+                <div style="font-family: 'Space Grotesk'; font-weight: 800; font-size: 18px; color: var(--ink); margin-top: 3px;">Hey Aanya — let's get learning.</div>
+                <div style="font-size: 12px; color: var(--ink-2); margin-top: 4px;">Class 8 · CBSE Curriculum · 47 chapters indexed</div>
+              </div>
+              <div class="tool-cards">
+                <div class="tool-card-mini tc-sky">
+                  <span class="tc-pill">Most Used</span>
+                  <div class="ic-box">📖</div>
+                  <div class="tc-title">Concept Explainer</div>
+                  <div class="tc-desc">Ask any CBSE doubt. Get grade-tuned answers with diagrams.</div>
+                </div>
+                <div class="tool-card-mini tc-emerald">
+                  <span class="tc-pill">PDF / Image</span>
+                  <div class="ic-box">📄</div>
+                  <div class="tc-title">Document Summarizer</div>
+                  <div class="tc-desc">Drop a PDF or image. Get summaries or key points.</div>
+                </div>
+                <div class="tool-card-mini tc-violet">
+                  <span class="tc-pill">Curated</span>
+                  <div class="ic-box">💡</div>
+                  <div class="tc-title">Project Generator</div>
+                  <div class="tc-desc">4 CBSE-aligned ideas with materials & effort level.</div>
+                </div>
+                <div class="tool-card-mini tc-amber">
+                  <span class="tc-pill">Mock + Focus</span>
+                  <div class="ic-box">🏆</div>
+                  <div class="tc-title">Exam Preparation</div>
+                  <div class="tc-desc">Timed mocks + Focus Area deep-study packs.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 1 · Student Dashboard</div>
+          <h4>One signed-in workspace, four AI tools, all grade-aware.</h4>
+          <p>The student lands here after login — no setup, no onboarding maze. Each card opens a focused workspace already scoped to their class and subject.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Grid of more shots -->
+    <div class="gallery-grid">
+
+      <!-- Concept Explainer -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ concept-explainer</div>
+        </div>
+        <div class="shot-body">
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+            <span class="mock-tag">📘 Science</span>
+            <span class="mock-tag">📖 Ch 11 · Light</span>
+            <span class="mock-tag" style="background:#FFF4DC; color:#B8821C;">⚡ Intermediate</span>
+          </div>
+          <div class="ce-msg-user">Why does a pencil look bent when dipped in a glass of water?</div>
+          <div class="ce-msg-ai">Great observation! This happens because of <strong>refraction</strong>. Light travels at different speeds in air and water — when it crosses the boundary, it bends. Your eyes still trace the light back in a straight line, so the pencil <em>looks</em> shifted from where it actually is.</div>
+          <div class="ce-msg-ai" style="background: #F0F9FF; border-color: #BAE6FD;">
+            <strong>💡 Real-world example:</strong> Same reason a swimming pool looks shallower than it really is — and why divers use special glasses to see clearly underwater.
+          </div>
+          <div class="ce-input">
+            <div class="ce-input-ico">📷</div>
+            <div class="ce-input-ico">📎</div>
+            <div style="flex:1;">Ask another question…</div>
+            <div class="ce-input-ico" style="background: linear-gradient(135deg,#5BA4CF,#2E86C1); color:white;">→</div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 2 · Concept Explainer</div>
+          <h4>Multi-turn chat with chapter & level locked in.</h4>
+          <p>Type, snap a textbook photo, or attach a PDF — the AI answers in vocabulary matched to the student's class.</p>
+        </div>
+      </div>
+
+      <!-- Signup / Class Picker -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ signup</div>
+        </div>
+        <div class="shot-body" style="display:flex; align-items:center; justify-content:center;">
+          <div class="login-card">
+            <h5>Create Your Account</h5>
+            <div class="sub-l">One-time setup. Class locked at signup.</div>
+            <div class="login-field"><span class="l-ico">👤</span><span>Aanya Sharma</span></div>
+            <div class="login-field"><span class="l-ico">✉️</span><span>aanya@email.com</span></div>
+            <div class="login-field"><span class="l-ico">🔒</span><span>••••••••</span></div>
+            <div style="font-size: 10.5px; font-weight: 700; color: var(--ink-2); margin-top: 12px; text-align: left;">PICK YOUR CLASS</div>
+            <div class="class-pills">
+              <span class="class-pill">1</span><span class="class-pill">2</span>
+              <span class="class-pill">3</span><span class="class-pill">4</span>
+              <span class="class-pill">5</span><span class="class-pill">6</span>
+              <span class="class-pill">7</span><span class="class-pill active">8</span>
+              <span class="class-pill">9</span><span class="class-pill">10</span>
+              <span class="class-pill">11</span><span class="class-pill">12</span>
+            </div>
+            <div class="login-btn">Continue →</div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 3 · Signup with Class Lock</div>
+          <h4>Pick once. Every AI call respects it forever.</h4>
+          <p>The class field is non-optional — that one choice powers grade-tuned answers, syllabus filters, and the mock-test rule engine.</p>
+        </div>
+      </div>
+
+      <!-- Mock Test in progress -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ mock-test · Q12 of 25</div>
+        </div>
+        <div class="shot-body">
+          <div class="mt-header">
+            <div>
+              <div style="font-family:'Space Grotesk'; font-weight:800; font-size:14px; color:var(--ink);">Class 8 · Science</div>
+              <div style="font-size:11px; color:var(--muted);">Light · Refraction · Lenses</div>
+            </div>
+            <div class="mt-timer">⏱ 24:18</div>
+          </div>
+          <div class="mt-progress"><div class="mt-fill"></div></div>
+          <div style="font-size:11px; color:var(--muted); font-weight:700; margin-bottom:7px; text-transform:uppercase; letter-spacing:0.06em;">Question 12 of 25 · Easy</div>
+          <div class="mt-q">When a ray of light passes from air into glass, which of the following statements is correct?</div>
+          <div class="mt-opt"><span class="opt-letter">A</span> It bends away from the normal</div>
+          <div class="mt-opt selected"><span class="opt-letter">B</span> It bends towards the normal</div>
+          <div class="mt-opt"><span class="opt-letter">C</span> It continues in a straight line</div>
+          <div class="mt-opt"><span class="opt-letter">D</span> It reflects back to air</div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 4 · Mock Test in Progress</div>
+          <h4>Timed. CBSE-structured. Auto-saving every answer.</h4>
+          <p>Question count, duration, difficulty mix and types — all derived from the student's grade group. Not a generic quiz.</p>
+        </div>
+      </div>
+
+      <!-- Test Result analytics -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ test-result / a8f3d2</div>
+        </div>
+        <div class="shot-body">
+          <div class="result-hero">
+            <div class="big">22 / 25</div>
+            <div class="lbl-r">⭐ Gold Star · 88% Accuracy</div>
+          </div>
+          <div class="badge-row">
+            <div class="res-badge"><div class="val-r">+270</div><div class="lbl-r">XP Earned</div></div>
+            <div class="res-badge"><div class="val-r">92<sup style="font-size:9px;">th</sup></div><div class="lbl-r">Percentile</div></div>
+            <div class="res-badge"><div class="val-r">29:14</div><div class="lbl-r">Time Taken</div></div>
+          </div>
+          <div style="font-size:11px; font-weight:700; color:var(--ink-2); margin-bottom:7px; text-transform:uppercase; letter-spacing:0.05em;">Topic-wise Accuracy</div>
+          <div class="mock-bar"><div class="fill" style="width: 95%; height:100%;">Reflection · 95%</div></div>
+          <div class="mock-bar"><div class="fill" style="width: 88%; height:100%; background:linear-gradient(90deg, #5BA4CF, #2E86C1);">Refraction · 88%</div></div>
+          <div class="mock-bar"><div class="fill" style="width: 52%; height:100%; background:linear-gradient(90deg, #E26D7A, #D14A5A);">Lenses · 52% ⚠️ Weak</div></div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 5 · Test Result Analytics</div>
+          <h4>Score, accuracy, percentile, weak areas — all in one view.</h4>
+          <p>Per-question explanations expand below. The system also flags weak topics so the next session can target them.</p>
+        </div>
+      </div>
+
+      <!-- Focus Area / Deep Study -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ focus-area · Photosynthesis</div>
+        </div>
+        <div class="shot-body">
+          <div style="font-family:'Space Grotesk'; font-weight:800; font-size:15px; color:var(--ink); margin-bottom:3px;">Photosynthesis · Class 7 Biology</div>
+          <div style="font-size:11.5px; color:var(--muted); margin-bottom:12px;">Concept · Mind Map · Exam Qs · Practice</div>
+          <div class="focus-tabs">
+            <div class="focus-tab">📘 Concept</div>
+            <div class="focus-tab active">🗺 Mind Map</div>
+            <div class="focus-tab">❓ Exam Qs</div>
+            <div class="focus-tab">✏️ Practice</div>
+          </div>
+          <div style="background:white; border-radius:11px; padding:18px; text-align:center; border:1px solid #EAF4FB;">
+            <div style="margin-bottom:10px;">
+              <span class="mindmap-node mn-root">PHOTOSYNTHESIS</span>
+            </div>
+            <div style="margin-bottom:8px;">
+              <span class="mindmap-node mn-l1">Inputs</span>
+              <span class="mindmap-node mn-l1">Process</span>
+              <span class="mindmap-node mn-l1">Outputs</span>
+            </div>
+            <div>
+              <span class="mindmap-node mn-l2">Sunlight</span>
+              <span class="mindmap-node mn-l2">CO₂</span>
+              <span class="mindmap-node mn-l2">Water</span>
+              <span class="mindmap-node mn-l2">Chloroplast</span>
+              <span class="mindmap-node mn-l2">Glucose</span>
+              <span class="mindmap-node mn-l2">O₂</span>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 6 · Focus Area</div>
+          <h4>Revision powerhouse — concept, mind map, formulas, practice.</h4>
+          <p>Pick any topic and get a complete study pack: visual mind map, frequently-asked exam Qs, and click-to-reveal practice cards.</p>
+        </div>
+      </div>
+
+      <!-- Project Generator -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ project-generator</div>
+        </div>
+        <div class="shot-body">
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;">
+            <span class="mock-tag">📐 Maths</span>
+            <span class="mock-tag">📖 Symmetry</span>
+            <span class="mock-tag" style="background:#EDE9FE; color:#6D28D9;">🛠 Physical Model</span>
+          </div>
+          <div class="proj-card-mini">
+            <div class="p-num">1</div>
+            <div style="flex:1;">
+              <div class="p-title">Symmetry Through Origami</div>
+              <div style="font-size:11px; color:var(--ink-2); margin-bottom:6px; line-height:1.45;">Fold and cut shapes to demonstrate lines of symmetry — birds, snowflakes, butterflies.</div>
+              <div class="p-meta">
+                <span class="p-tag">Paper · scissors</span>
+                <span class="p-tag effort-low">Low Effort</span>
+                <span class="p-tag">2 hrs</span>
+              </div>
+            </div>
+          </div>
+          <div class="proj-card-mini">
+            <div class="p-num">2</div>
+            <div style="flex:1;">
+              <div class="p-title">Kaleidoscope Build</div>
+              <div style="font-size:11px; color:var(--ink-2); margin-bottom:6px; line-height:1.45;">Construct a working kaleidoscope using mirrors to show rotational symmetry in real time.</div>
+              <div class="p-meta">
+                <span class="p-tag">Mirrors · tube</span>
+                <span class="p-tag effort-med">Medium Effort</span>
+                <span class="p-tag">3 hrs</span>
+              </div>
+            </div>
+          </div>
+          <div class="proj-card-mini">
+            <div class="p-num">3</div>
+            <div style="flex:1;">
+              <div class="p-title">City Map Symmetry Hunt</div>
+              <div style="font-size:11px; color:var(--ink-2); margin-bottom:6px; line-height:1.45;">Identify symmetric buildings & monuments around the student's city, mark on a poster.</div>
+              <div class="p-meta">
+                <span class="p-tag">Poster · photos</span>
+                <span class="p-tag effort-low">Low Effort</span>
+                <span class="p-tag">2 hrs</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 7 · Project Generator</div>
+          <h4>4 unique ideas with materials, effort, and time estimate.</h4>
+          <p>Each idea is mapped to the chapter and tagged with project type. Don't like the set? Regenerate with one tap.</p>
+        </div>
+      </div>
+
+      <!-- Document Summarizer -->
+      <div class="app-shot" data-reveal>
+        <div class="chrome">
+          <div class="dots"><div class="dot-c r"></div><div class="dot-c y"></div><div class="dot-c g"></div></div>
+          <div class="url">/ document-summarizer</div>
+        </div>
+        <div class="shot-body">
+          <div class="ds-upload">
+            <div class="icon-big">📄</div>
+            <div style="font-size:12.5px; font-weight:700; color:var(--primary-deep);">chapter-5-cell-structure.pdf</div>
+            <div style="font-size:11px; color:var(--muted); margin-top:2px;">14 pages · 2.3 MB · Uploaded just now</div>
+          </div>
+          <div class="ds-modes">
+            <div class="ds-mode active">Full Summary</div>
+            <div class="ds-mode">Key Points</div>
+            <div class="ds-mode">Ask a Q</div>
+          </div>
+          <div style="background:white; padding:13px; border-radius:11px; border:1px solid #EAF4FB;">
+            <div style="font-size:11px; font-weight:700; color:var(--primary-deep); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.04em;">✨ Grade-7 Summary</div>
+            <div style="font-size:12px; color:var(--ink-2); line-height:1.6;">
+              <strong style="color:var(--ink);">Cells</strong> are the building blocks of all living things. Each cell has three main parts: the <strong style="color:var(--ink);">membrane</strong> (outer cover), the <strong style="color:var(--ink);">nucleus</strong> (control room), and the <strong style="color:var(--ink);">cytoplasm</strong> (jelly inside)…
+            </div>
+          </div>
+        </div>
+        <div class="caption">
+          <div class="lbl">Screen 8 · Document Summarizer</div>
+          <h4>Drop a PDF or image. Get a grade-tuned summary in seconds.</h4>
+          <p>Three output modes: full summary, bullet-point key takeaways, or ask a question about the document.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ HOW TO USE ============ -->
+  <section id="how">
+    <div data-reveal>
+      <span class="section-eyebrow">How to use</span>
+      <h2>From signup to a graded mock test in <span class="gradient-text">five steps</span>.</h2>
+      <p class="lead">The student journey is intentionally short. No onboarding wizards, no lengthy setup — pick your class once, then jump straight to learning.</p>
+    </div>
+
+    <div class="steps-flow">
+      <div class="step-node" data-reveal>
+        <div class="step-num">1</div>
+        <h4>Sign Up</h4>
+        <p>Name, email, password and class (1–12). Class is mandatory — it powers everything.</p>
+      </div>
+      <div class="step-node" data-reveal>
+        <div class="step-num">2</div>
+        <h4>Land on Dashboard</h4>
+        <p>See your 4 tool cards. Sidebar shows past sessions by tool.</p>
+      </div>
+      <div class="step-node" data-reveal>
+        <div class="step-num">3</div>
+        <h4>Pick a Tool</h4>
+        <p>Explainer, Summariser, Projects or Exam Prep. Each opens a focused workspace.</p>
+      </div>
+      <div class="step-node" data-reveal>
+        <div class="step-num">4</div>
+        <h4>Set Scope</h4>
+        <p>Subject + chapter + level (or test type). Everything else is auto-fed to the AI.</p>
+      </div>
+      <div class="step-node" data-reveal>
+        <div class="step-num">5</div>
+        <h4>Learn / Test</h4>
+        <p>Chat, summarise, generate, attempt. All sessions saved to history.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DATA / CHARTS ============ -->
+  <section id="data">
+    <div data-reveal>
+      <span class="section-eyebrow">Data Coverage</span>
+      <h2>How AI Tutor scales <span class="gradient-text">across grades and subjects</span>.</h2>
+      <p class="lead">The platform's CBSE coverage and mock-test structure are not boilerplate — they follow grade-specific rules. Below: how content depth, test rigour and subject mix shift class by class.</p>
+    </div>
+
+    <div class="chart-grid">
+      <div class="chart-card" data-reveal>
+        <h3>Mock Test Structure by Class Group</h3>
+        <p class="sub">Question count and time follow CBSE-mirrored rules</p>
+        <div class="chart-holder"><canvas id="testChart"></canvas></div>
+      </div>
+      <div class="chart-card" data-reveal>
+        <h3>Difficulty Split by Class Group</h3>
+        <p class="sub">Younger grades skew easier; senior grades favour mediums</p>
+        <div class="chart-holder"><canvas id="diffChart"></canvas></div>
+      </div>
+      <div class="chart-card" data-reveal>
+        <h3>Subjects Covered per Grade</h3>
+        <p class="sub">From 3 subjects in Class 1 to 7 streams in Classes 11–12</p>
+        <div class="chart-holder"><canvas id="subjChart"></canvas></div>
+      </div>
+      <div class="chart-card" data-reveal>
+        <h3>AI Response Depth by Class</h3>
+        <p class="sub">Vocabulary, depth and analytical rigour scale with grade</p>
+        <div class="chart-holder"><canvas id="depthChart"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ COMPARE ============ -->
+  <section id="compare">
+    <div data-reveal>
+      <span class="section-eyebrow">vs Generic AI tools</span>
+      <h2>How AI Tutor is different from <span class="gradient-text">ChatGPT, Gemini, Claude</span>.</h2>
+      <p class="lead">Those are general-purpose models. AI Tutor is a <strong>vertical product</strong> built on top of them — designed specifically for a CBSE student. Here is what changes.</p>
+    </div>
+
+    <div class="compare-wrap" data-reveal>
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>Capability</th>
+            <th class="col-us">AI Tutor</th>
+            <th>ChatGPT / Gemini</th>
+            <th>Generic Quiz Apps</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Knows the student's class automatically</td>
+            <td class="col-us"><span class="yes">✓ Locked at signup</span></td>
+            <td><span class="no">✗ Must restate every chat</span></td>
+            <td><span class="partial">~ Sometimes</span></td>
+          </tr>
+          <tr>
+            <td>CBSE-aligned chapter/subject scope</td>
+            <td class="col-us"><span class="yes">✓ Loaded from NCERT TOC</span></td>
+            <td><span class="no">✗ No syllabus awareness</span></td>
+            <td><span class="partial">~ Static question bank</span></td>
+          </tr>
+          <tr>
+            <td>Mock tests with CBSE structure (count, time, difficulty)</td>
+            <td class="col-us"><span class="yes">✓ Grade-rule engine</span></td>
+            <td><span class="no">✗ Generic Q&A</span></td>
+            <td><span class="yes">✓ Pre-built only</span></td>
+          </tr>
+          <tr>
+            <td>14+ exam question types (HOTS, assertion-reason, code-output…)</td>
+            <td class="col-us"><span class="yes">✓ Built-in</span></td>
+            <td><span class="partial">~ Manual prompting</span></td>
+            <td><span class="partial">~ Limited types</span></td>
+          </tr>
+          <tr>
+            <td>Per-question explanations + study notes</td>
+            <td class="col-us"><span class="yes">✓ Auto-generated</span></td>
+            <td><span class="no">✗ No test engine</span></td>
+            <td><span class="partial">~ Static answers</span></td>
+          </tr>
+          <tr>
+            <td>Topic-wise analytics & weak-area detection</td>
+            <td class="col-us"><span class="yes">✓ Per attempt</span></td>
+            <td><span class="no">✗</span></td>
+            <td><span class="partial">~ Basic</span></td>
+          </tr>
+          <tr>
+            <td>Project ideas mapped to chapter</td>
+            <td class="col-us"><span class="yes">✓ With materials list</span></td>
+            <td><span class="partial">~ Generic ideas</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Image-based doubt solving (textbook screenshots)</td>
+            <td class="col-us"><span class="yes">✓ Vision model</span></td>
+            <td><span class="yes">✓ Vision model</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Safe / scoped output — no off-syllabus drift</td>
+            <td class="col-us"><span class="yes">✓ System-prompted</span></td>
+            <td><span class="no">✗ Unbounded</span></td>
+            <td><span class="yes">✓ But rigid</span></td>
+          </tr>
+          <tr>
+            <td>Grade-adaptive vocabulary (Class 3 vs Class 12)</td>
+            <td class="col-us"><span class="yes">✓ 5 tone tiers</span></td>
+            <td><span class="partial">~ Needs prompting</span></td>
+            <td><span class="no">✗</span></td>
+          </tr>
+          <tr>
+            <td>Made for India / CBSE / regional context</td>
+            <td class="col-us"><span class="yes">✓ NCERT-first</span></td>
+            <td><span class="no">✗ US-default</span></td>
+            <td><span class="partial">~ Some Indian apps</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="margin-top: 40px;" data-reveal>
+      <h3 style="font-size: 22px; margin-bottom: 18px;">Why this matters</h3>
+      <div class="diff-grid">
+        <div class="diff-card">
+          <div class="ribbon">FOCUS</div>
+          <h4>One Audience, Done Right</h4>
+          <p>ChatGPT serves everyone — programmers, lawyers, marketers, students. AI Tutor serves <em>one</em> user: a CBSE school student. Every feature is built for that single profile.</p>
+        </div>
+        <div class="diff-card">
+          <h4>Curriculum > Cleverness</h4>
+          <p>The AI is bounded by the official CBSE chapter list. It won't go off-syllabus, won't recommend non-grade content, won't confuse a Class 4 student with Class 10 vocabulary.</p>
+        </div>
+        <div class="diff-card">
+          <h4>Real Exam Engine</h4>
+          <p>This isn't a quiz wrapper. The mock test engine implements CBSE-style question variety, time-per-question rules, and post-test analytics — things a generic model has no concept of.</p>
+        </div>
+        <div class="diff-card">
+          <h4>Built-In Memory</h4>
+          <p>Every chat, summary, test attempt and project session is saved per student. The sidebar gives a full history — students return to past work, parents can review.</p>
+        </div>
+        <div class="diff-card">
+          <h4>Zero Prompt Fatigue</h4>
+          <p>Students don't need to write "act as a Class 8 teacher and explain in simple language" — the platform handles that for them on every call, invisibly.</p>
+        </div>
+        <div class="diff-card">
+          <h4>Parent-Safe by Design</h4>
+          <p>The AI is scope-locked to the child's chapters and class — no random internet content, no off-syllabus drift, no need for parents to monitor every chat session.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FUTURE ROADMAP ============ -->
+  <section id="future">
+    <div data-reveal>
+      <span class="section-eyebrow">What's next</span>
+      <h2>Features we plan to add <span class="gradient-text">in upcoming releases</span>.</h2>
+      <p class="lead">The prototype proves the core. The roadmap below extends AI Tutor into a complete adaptive learning platform — for the student, the parent, and the teacher.</p>
+    </div>
+
+    <div class="roadmap" data-reveal>
+      <div class="road-item">
+        <div class="timing">Near Term · v1.1</div>
+        <h4>Voice & Speech Tutor</h4>
+        <p>Talk to the AI like a tutor sitting next to you — voice questions, spoken answers, pronunciation feedback for English/Hindi. Great for younger classes who can't yet type fluently.</p>
+        <div class="features-mini">
+          <span>Voice input</span><span>TTS output</span><span>Pronunciation check</span><span>Hands-free chat</span>
+        </div>
+      </div>
+
+      <div class="road-item q3">
+        <div class="timing">Near Term · v1.2</div>
+        <h4>Parent & Teacher Dashboard</h4>
+        <p>A second login for parents/teachers: see weekly progress, weak areas, time spent, mock test scores. Push assignments and view per-student analytics.</p>
+        <div class="features-mini">
+          <span>Progress reports</span><span>Assignment push</span><span>Multi-student view</span><span>Email digests</span>
+        </div>
+      </div>
+
+      <div class="road-item q4">
+        <div class="timing">Mid Term · v2.0</div>
+        <h4>Adaptive Learning Path</h4>
+        <p>AI auto-builds a personal learning path: today revise X, tomorrow practice Y. Updates daily based on test performance and identified weak areas — like a personal coach.</p>
+        <div class="features-mini">
+          <span>Daily plan</span><span>Spaced repetition</span><span>Goal tracking</span><span>Streak engine</span>
+        </div>
+      </div>
+
+      <div class="road-item q4">
+        <div class="timing">Mid Term · v2.1</div>
+        <h4>Regional Language Support</h4>
+        <p>Full UI + AI responses in Hindi, Tamil, Telugu, Bengali, Marathi. State-board curriculum support added alongside CBSE — UP, Maharashtra, Karnataka boards.</p>
+        <div class="features-mini">
+          <span>Hindi mode</span><span>5 regional UIs</span><span>State boards</span><span>Bilingual chat</span>
+        </div>
+      </div>
+
+      <div class="road-item q5">
+        <div class="timing">Long Term · v3.0</div>
+        <h4>Gamified Learning Coins & Leaderboards</h4>
+        <p>XP, coins, daily streaks, school-level leaderboards. Make every correct answer feel rewarding for Classes 1–8. Redeem coins for avatar customisations or learning rewards.</p>
+        <div class="features-mini">
+          <span>XP system</span><span>Leaderboards</span><span>Avatars</span><span>Achievement badges</span>
+        </div>
+      </div>
+
+      <div class="road-item q5">
+        <div class="timing">Long Term · v3.1</div>
+        <h4>Live Doubt Sessions with Human Tutors</h4>
+        <p>When AI can't crack a stubborn doubt, hand off to a verified human tutor. AI prepares the context, the tutor jumps in for the last mile. Hybrid AI + human model.</p>
+        <div class="features-mini">
+          <span>Human escalation</span><span>Video sessions</span><span>Pre-context briefing</span><span>Quality-graded tutors</span>
+        </div>
+      </div>
+
+      <div class="road-item q5">
+        <div class="timing">Long Term · v3.2</div>
+        <h4>Offline / Low-Bandwidth Mode</h4>
+        <p>Pre-download grade-locked study material for low-internet regions. Sync test attempts when back online. Critical for rural India where bandwidth is unreliable.</p>
+        <div class="features-mini">
+          <span>PWA install</span><span>Offline notes</span><span>Sync on reconnect</span><span>Low-data toggle</span>
+        </div>
+      </div>
+
+      <div class="road-item q5">
+        <div class="timing">Long Term · v4.0</div>
+        <h4>Handwritten Answer Evaluator</h4>
+        <p>Student writes the answer on paper, snaps a photo — AI evaluates handwriting + correctness + step-by-step marks like a real CBSE examiner. Closes the loop between practice and feedback.</p>
+        <div class="features-mini">
+          <span>OCR engine</span><span>Step-marking</span><span>Mistake heatmap</span><span>Examiner mode</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VISION ============ -->
+  <section id="vision">
+    <div class="vision-card" data-reveal>
+      <span class="v-eyebrow">Our Vision</span>
+      <h2>Every Indian school student deserves a tutor that knows them — not a chatbot that knows everything.</h2>
+      <p>AI Tutor is built so that the child who can't afford a personal coach gets the same quality of attention as the one who can. One platform, every class, every subject, infinite patience.</p>
+
+      <div class="vision-pillars">
+        <div class="vision-pillar">
+          <div class="icon">🎓</div>
+          <h4>Accessible</h4>
+          <p>Works on any browser, any device, any internet speed. Free at the entry level.</p>
+        </div>
+        <div class="vision-pillar">
+          <div class="icon">🇮🇳</div>
+          <h4>India-First</h4>
+          <p>CBSE-native, regional-language ready, built around how Indian classrooms actually work.</p>
+        </div>
+        <div class="vision-pillar">
+          <div class="icon">🚀</div>
+          <h4>Adaptive</h4>
+          <p>Every student gets a curriculum that bends to them — not the other way around.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="brand" style="color: white;">
+          <div class="brand-mark">AI</div>
+          <span style="color: white;">AI Tutor</span>
+        </div>
+        <p style="margin-top: 14px; max-width: 380px;">A grade-adaptive AI learning platform built by CodeVidhya for CBSE students from Class 1 to Class 12.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li>Concept Explainer</li>
+          <li>Document Summariser</li>
+          <li>Project Generator</li>
+          <li>Exam Preparation</li>
+        </ul>
+      </div>
+      <div>
+        <h4>Built By</h4>
+        <ul>
+          <li>CodeVidhya</li>
+          <li>Prototype · 2026</li>
+          <li>Made in India · For Indian Classrooms</li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 CodeVidhya · AI Tutor Prototype</span>
+      <span>Grade-adaptive learning · Built for CBSE Classes 1–12</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  /* ============ TABS ============ */
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(target).classList.add('active');
+    });
+  });
+
+  /* ============ REVEAL ON SCROLL ============ */
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el));
+
+  /* ============ CHART.JS GLOBAL DEFAULTS ============ */
+  Chart.defaults.font.family = "'Inter', system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#355368';
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.padding = 14;
+  Chart.defaults.plugins.legend.labels.font = { size: 12, weight: 500 };
+
+  const gridColor = 'rgba(91, 164, 207, 0.12)';
+  const axisColor = '#6B8AA0';
+
+  /* ============ CHART 1: Test Structure ============ */
+  new Chart(document.getElementById('testChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Class 1–3', 'Class 4–5', 'Class 6–8', 'Class 9–10', 'Class 11–12'],
+      datasets: [
+        {
+          label: 'Questions',
+          data: [12, 15, 25, 25, 30],
+          backgroundColor: '#5BA4CF',
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 32,
+        },
+        {
+          label: 'Minutes',
+          data: [20, 20, 40, 40, 50],
+          backgroundColor: '#B3D9F2',
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 32,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: axisColor } },
+        x: { grid: { display: false }, ticks: { color: axisColor, font: { weight: 600 } } },
+      },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: {
+          backgroundColor: '#0F2A3D',
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { size: 13 },
+          bodyFont: { size: 12.5 },
+        }
+      },
+    },
+  });
+
+  /* ============ CHART 2: Difficulty Split ============ */
+  new Chart(document.getElementById('diffChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Class 1–3', 'Class 4–5', 'Class 6–8', 'Class 9–10', 'Class 11–12'],
+      datasets: [
+        { label: 'Easy', data: [70, 70, 50, 30, 30], backgroundColor: '#7EC8E3', borderRadius: 6, maxBarThickness: 50 },
+        { label: 'Medium', data: [20, 20, 35, 50, 50], backgroundColor: '#5BA4CF', borderRadius: 6, maxBarThickness: 50 },
+        { label: 'Hard', data: [10, 10, 15, 20, 20], backgroundColor: '#2E86C1', borderRadius: 6, maxBarThickness: 50 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: axisColor, font: { weight: 600 } } },
+        y: {
+          stacked: true,
+          grid: { color: gridColor },
+          ticks: { color: axisColor, callback: v => v + '%' },
+          max: 100,
+        },
+      },
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y}%` } },
+      },
+    },
+  });
+
+  /* ============ CHART 3: Subjects per Grade ============ */
+  new Chart(document.getElementById('subjChart'), {
+    type: 'line',
+    data: {
+      labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+      datasets: [{
+        label: 'Subjects',
+        data: [3, 3, 4, 4, 4, 6, 6, 6, 6, 6, 7, 7],
+        borderColor: '#2E86C1',
+        backgroundColor: 'rgba(91, 164, 207, 0.18)',
+        borderWidth: 3,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#2E86C1',
+        pointBorderWidth: 3,
+        pointRadius: 5,
+        pointHoverRadius: 7,
+        fill: true,
+        tension: 0.4,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: axisColor, stepSize: 1 } },
+        x: { grid: { display: false }, ticks: { color: axisColor, font: { weight: 600 } }, title: { display: true, text: 'Class', color: axisColor, font: { size: 11 } } },
+      },
+      plugins: { legend: { display: false } },
+    },
+  });
+
+  /* ============ CHART 4: AI Depth Radar ============ */
+  new Chart(document.getElementById('depthChart'), {
+    type: 'radar',
+    data: {
+      labels: ['Vocabulary', 'Depth', 'Rigour', 'Examples', 'Formality', 'Pace'],
+      datasets: [
+        {
+          label: 'Class 1–3',
+          data: [2, 1, 1, 5, 1, 1],
+          borderColor: '#7EC8E3',
+          backgroundColor: 'rgba(126, 200, 227, 0.25)',
+          borderWidth: 2,
+          pointRadius: 3,
+        },
+        {
+          label: 'Class 6–8',
+          data: [3.5, 3.5, 3, 4, 3, 3],
+          borderColor: '#5BA4CF',
+          backgroundColor: 'rgba(91, 164, 207, 0.25)',
+          borderWidth: 2,
+          pointRadius: 3,
+        },
+        {
+          label: 'Class 11–12',
+          data: [5, 5, 5, 3, 5, 4.5],
+          borderColor: '#2E86C1',
+          backgroundColor: 'rgba(46, 134, 193, 0.25)',
+          borderWidth: 2,
+          pointRadius: 3,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        r: {
+          beginAtZero: true,
+          max: 5,
+          ticks: { display: false, stepSize: 1 },
+          grid: { color: gridColor },
+          angleLines: { color: gridColor },
+          pointLabels: { color: axisColor, font: { size: 12, weight: 600 } },
+        }
+      },
+      plugins: { legend: { position: 'bottom' } },
+    },
+  });
+</script>
+
+</body>
+</html>

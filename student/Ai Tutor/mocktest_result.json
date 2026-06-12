@@ -1,0 +1,311 @@
+﻿{
+    "questions":  [
+                      {
+                          "question":  "What is the speed of light in air?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "3 x 10^8 m/s",
+                          "difficulty":  "easy",
+                          "topic":  "Light",
+                          "explanation":  "The speed of light in air is approximately 3 x 10^8 meters per second.",
+                          "studyNotes":  "Light is a form of electromagnetic radiation that travels in a straight line. The speed of light is constant and does not change, regardless of the motion of the observer or the source of light."
+                      },
+                      {
+                          "question":  "Which of the following is an example of reflection of light?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "easy",
+                          "topic":  "Light",
+                          "explanation":  "Mirrors are examples of reflection of light. When light hits a mirror, it bounces back, creating an image.",
+                          "studyNotes":  "Reflection of light occurs when light hits a surface and bounces back. This can occur with mirrors, still water, or other smooth surfaces."
+                      },
+                      {
+                          "question":  "What is the term for the bending of light as it passes from one medium to another?",
+                          "type":  "fill-blank",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "Refraction",
+                          "difficulty":  "easy",
+                          "topic":  "Light",
+                          "explanation":  "Refraction occurs when light passes from one medium to another with a different optical density.",
+                          "studyNotes":  "Refraction is the bending of light as it passes from one medium to another. This occurs because light travels at different speeds in different media."
+                      },
+                      {
+                          "question":  "Which of the following types of lenses converges light rays?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "easy",
+                          "topic":  "Light",
+                          "explanation":  "Convex lenses converge light rays, meaning they bring them together.",
+                          "studyNotes":  "Lenses can either converge or diverge light rays. Convex lenses are thicker in the middle and converge light rays."
+                      },
+                      {
+                          "question":  "What is the frequency range of human hearing?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "20 Hz - 20,000 Hz",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "The frequency range of human hearing is approximately 20 Hz to 20,000 Hz.",
+                          "studyNotes":  "Sound is a form of vibration that travels through the air. The frequency of a sound wave determines its pitch."
+                      },
+                      {
+                          "question":  "Which of the following is an example of a transverse wave?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "Light waves are transverse waves, meaning they oscillate perpendicular to the direction of propagation.",
+                          "studyNotes":  "Waves can be either transverse or longitudinal. Transverse waves oscillate perpendicular to the direction of propagation."
+                      },
+                      {
+                          "question":  "What is the speed of sound in air at room temperature?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "343 m/s",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "The speed of sound in air at room temperature is approximately 343 meters per second.",
+                          "studyNotes":  "The speed of sound in air depends on the temperature and humidity of the air."
+                      },
+                      {
+                          "question":  "Which of the following instruments is used to measure the frequency of a sound wave?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "A sonometer is an instrument used to measure the frequency of a sound wave.",
+                          "studyNotes":  "A sonometer is a device used to measure the frequency of a sound wave. It consists of a wire stretched between two fixed points."
+                      },
+                      {
+                          "question":  "What is the term for the study of the properties of sound?",
+                          "type":  "fill-blank",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "Acoustics",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "Acoustics is the study of the properties of sound, including its production, transmission, and perception.",
+                          "studyNotes":  "Acoustics is the study of sound and its properties. It involves the study of sound waves and their behavior in different media."
+                      },
+                      {
+                          "question":  "Which of the following types of sound waves has a frequency above 20,000 Hz?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "easy",
+                          "topic":  "Sound",
+                          "explanation":  "Ultrasonic sound waves have frequencies above 20,000 Hz.",
+                          "studyNotes":  "Ultrasonic sound waves have frequencies above 20,000 Hz and are not audible to humans."
+                      },
+                      {
+                          "question":  "What is the principle of total internal reflection?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "Total internal reflection occurs when light hits a surface at a critical angle, causing it to be reflected back into the same medium.",
+                          "difficulty":  "medium",
+                          "topic":  "Light",
+                          "explanation":  "Total internal reflection occurs when light hits a surface at a critical angle, causing it to be reflected back into the same medium.",
+                          "studyNotes":  "Total internal reflection is a phenomenon that occurs when light hits a surface at a critical angle, causing it to be reflected back into the same medium. This occurs when light passes from a denser medium to a rarer medium."
+                      },
+                      {
+                          "question":  "How does the speed of light change when it passes from air into glass?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "The speed of light decreases when it passes from air into glass.",
+                          "difficulty":  "medium",
+                          "topic":  "Light",
+                          "explanation":  "The speed of light decreases when it passes from air into glass because glass has a higher refractive index than air.",
+                          "studyNotes":  "The speed of light changes when it passes from one medium to another. When light passes from a rarer medium to a denser medium, its speed decreases."
+                      },
+                      {
+                          "question":  "What is the difference between a real image and a virtual image?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "A real image is formed by the convergence of light rays, while a virtual image is formed by the divergence of light rays.",
+                          "difficulty":  "medium",
+                          "topic":  "Light",
+                          "explanation":  "A real image is formed by the convergence of light rays, while a virtual image is formed by the divergence of light rays.",
+                          "studyNotes":  "Images can be either real or virtual. Real images are formed by the convergence of light rays and can be projected onto a screen. Virtual images are formed by the divergence of light rays and cannot be projected onto a screen."
+                      },
+                      {
+                          "question":  "How does the frequency of a sound wave affect its pitch?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "The frequency of a sound wave is directly proportional to its pitch.",
+                          "difficulty":  "medium",
+                          "topic":  "Sound",
+                          "explanation":  "The frequency of a sound wave is directly proportional to its pitch. Higher frequency sound waves have higher pitches, while lower frequency sound waves have lower pitches.",
+                          "studyNotes":  "The frequency of a sound wave determines its pitch. Higher frequency sound waves have higher pitches, while lower frequency sound waves have lower pitches."
+                      },
+                      {
+                          "question":  "What is the difference between a longitudinal wave and a transverse wave?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "A longitudinal wave oscillates parallel to the direction of propagation, while a transverse wave oscillates perpendicular to the direction of propagation.",
+                          "difficulty":  "medium",
+                          "topic":  "Sound",
+                          "explanation":  "A longitudinal wave oscillates parallel to the direction of propagation, while a transverse wave oscillates perpendicular to the direction of propagation.",
+                          "studyNotes":  "Waves can be either longitudinal or transverse. Longitudinal waves oscillate parallel to the direction of propagation, while transverse waves oscillate perpendicular to the direction of propagation."
+                      },
+                      {
+                          "question":  "What is the principle of superposition of sound waves?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "The principle of superposition states that when two or more sound waves overlap, the resulting wave is the sum of the individual waves.",
+                          "difficulty":  "medium",
+                          "topic":  "Sound",
+                          "explanation":  "The principle of superposition states that when two or more sound waves overlap, the resulting wave is the sum of the individual waves.",
+                          "studyNotes":  "The principle of superposition is a fundamental concept in physics that applies to all types of waves, including sound waves. When two or more sound waves overlap, the resulting wave is the sum of the individual waves."
+                      },
+                      {
+                          "question":  "A ray of light passes from air into a glass slab. What happens to the light ray?",
+                          "type":  "diagram MCQ",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "medium",
+                          "topic":  "Light",
+                          "explanation":  "The light ray is refracted, or bent, as it passes from air into the glass slab.",
+                          "studyNotes":  "When light passes from one medium to another, it is refracted, or bent. The amount of bending depends on the angle of incidence and the refractive indices of the two media."
+                      },
+                      {
+                          "question":  "A sound wave has a frequency of 500 Hz and a wavelength of 0.7 m. What is the speed of the sound wave?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "350 m/s",
+                          "difficulty":  "medium",
+                          "topic":  "Sound",
+                          "explanation":  "The speed of the sound wave can be calculated using the formula v = fλ, where v is the speed, f is the frequency, and λ is the wavelength.",
+                          "studyNotes":  "The speed of a sound wave can be calculated using the formula v = fλ, where v is the speed, f is the frequency, and λ is the wavelength."
+                      },
+                      {
+                          "question":  "A lens has a focal length of 10 cm. What type of lens is it?",
+                          "type":  "mcq",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "medium",
+                          "topic":  "Light",
+                          "explanation":  "A lens with a focal length of 10 cm is a convex lens.",
+                          "studyNotes":  "Lenses can be either convex or concave. Convex lenses have a positive focal length, while concave lenses have a negative focal length."
+                      },
+                      {
+                          "question":  "What is the critical angle of a glass-air interface?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "42 degrees",
+                          "difficulty":  "hard",
+                          "topic":  "Light",
+                          "explanation":  "The critical angle of a glass-air interface is approximately 42 degrees.",
+                          "studyNotes":  "The critical angle is the angle of incidence above which total internal reflection occurs. It depends on the refractive indices of the two media."
+                      },
+                      {
+                          "question":  "A sound wave has a frequency of 1000 Hz and a speed of 350 m/s. What is the wavelength of the sound wave?",
+                          "type":  "numerical",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "0.35 m",
+                          "difficulty":  "hard",
+                          "topic":  "Sound",
+                          "explanation":  "The wavelength of the sound wave can be calculated using the formula λ = v/f, where λ is the wavelength, v is the speed, and f is the frequency.",
+                          "studyNotes":  "The wavelength of a sound wave can be calculated using the formula λ = v/f, where λ is the wavelength, v is the speed, and f is the frequency."
+                      },
+                      {
+                          "question":  "What is the principle of diffraction of sound waves?",
+                          "type":  "assertion-reason",
+                          "options":  [
+
+                                      ],
+                          "correctAnswer":  "The principle of diffraction states that sound waves can bend around obstacles or through small openings.",
+                          "difficulty":  "hard",
+                          "topic":  "Sound",
+                          "explanation":  "The principle of diffraction states that sound waves can bend around obstacles or through small openings.",
+                          "studyNotes":  "The principle of diffraction is a fundamental concept in physics that applies to all types of waves, including sound waves. Sound waves can bend around obstacles or through small openings, allowing them to spread out and fill a room."
+                      },
+                      {
+                          "question":  "A ray of light passes from air into a prism. What happens to the light ray?",
+                          "type":  "diagram MCQ",
+                          "options":  [
+                                          "A",
+                                          "B",
+                                          "C",
+                                          "D"
+                                      ],
+                          "correctAnswer":  "A",
+                          "difficulty":  "hard",
+                          "topic":  "Light",
+                          "explanation":  "The light ray is refracted, or bent, as it passes from air into the prism.",
+                          "studyNotes":  "When light passes from one medium to another, it is refracted, or bent. The amount of bending depends on the angle of incidence and the refractive indices of the two media."
+                      }
+                  ],
+    "config":  {
+                   "totalQuestions":  25,
+                   "totalTime":  40,
+                   "easyPercent":  50,
+                   "mediumPercent":  35,
+                   "hardPercent":  15
+               }
+}

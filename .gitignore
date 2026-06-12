@@ -1,0 +1,66 @@
+# ─── Dependencies ────────────────────────────────
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pip-cache/
+
+# ─── Build artifacts ─────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+.parcel-cache/
+
+# ─── Env / secrets ───────────────────────────────
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ─── Logs / OS junk ──────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Editor / IDE ────────────────────────────────
+.vscode/
+.idea/
+
+# ─── Local SQLite databases (sub-app runtime state) ──
+*.db
+*.db-journal
+
+# ─── Uploaded user content ───────────────────────
+**/uploads/
+
+# ─── Media / large binaries (kept out of the repo) ──
+videos/
+videos - Copy.zip
+screen recording of tools/
+*.mp4
+*.mov
+*.zip
+*.rar
+*.7z
+
+# ─── Misc local docs that don't belong in the repo ──
+openmaic.docx
+Codevidhya_requirement.xlsx
+
+# ─── "Others" prototype folder — not part of the platform ──
+others/
+
+# ─── Bundled tool subprojects that ship as plain folders ──
+teacher/classroom-ai-main/reading-comprehension-tool-main/
+teacher/classroom-ai-main/vocabulary-mastery-tool-main/
+teacher/classroom-ai-main/reading-comprehension-tool-main.zip
+teacher/classroom-ai-main/vocabulary-mastery-tool-main.zip
+
+# ─── Render service logs ─────────────────────────
+*log.txt
