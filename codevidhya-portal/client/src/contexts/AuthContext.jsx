@@ -3,6 +3,8 @@ import { authAPI } from '../utils/api';
 
 const AuthContext = createContext(null);
 
+const HANDOFF_KEY = 'cv_handoff_v2';
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +26,7 @@ export function AuthProvider({ children }) {
       .catch(() => {
         localStorage.removeItem('cv_token');
         localStorage.removeItem('cv_user');
+        localStorage.removeItem(HANDOFF_KEY);
         setUser(null);
       })
       .finally(() => setLoading(false));
@@ -32,8 +35,11 @@ export function AuthProvider({ children }) {
   const persist = (token, u, handoff) => {
     localStorage.setItem('cv_token', token);
     localStorage.setItem('cv_user', JSON.stringify(u));
-    if (handoff) {
-      sessionStorage.setItem('cv_handoff', JSON.stringify(handoff));
+    if (handoff && handoff.token) {
+      // Persist the sub-app handoff so refreshing the embedded view (or
+      // closing & re-opening the tab) still lands the user on their
+      // dashboard — no second-login surprises.
+      localStorage.setItem(HANDOFF_KEY, JSON.stringify(handoff));
     }
     setUser(u);
   };
@@ -53,6 +59,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     localStorage.removeItem('cv_token');
     localStorage.removeItem('cv_user');
+    localStorage.removeItem(HANDOFF_KEY);
     setUser(null);
   };
 
@@ -64,6 +71,15 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
+
+export function readHandoff() {
+  try {
+    const raw = localStorage.getItem(HANDOFF_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
 
 export function dashboardPathFor(role) {
   if (role === 'student') return '/student';

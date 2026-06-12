@@ -25,6 +25,11 @@ const userSchema = new mongoose.Schema(
       },
     },
     password: { type: String, required: true },
+    // The most recent sub-app session token + user object returned by the
+    // matching sub-app during signup/login. Lets the portal re-issue a fresh
+    // handoff if the browser-side copy gets lost (refresh, new tab, etc.).
+    subAppToken: { type: String, default: null },
+    subAppUser:  { type: mongoose.Schema.Types.Mixed, default: null },
   },
   { timestamps: true }
 );

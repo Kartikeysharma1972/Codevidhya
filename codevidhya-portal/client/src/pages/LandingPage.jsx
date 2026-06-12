@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, AnimatePresence } from 'framer-motion';
 import {
@@ -597,6 +597,13 @@ function Footer() {
 
 export default function LandingPage() {
   const { scrollYProgress } = useScroll();
+
+  // Fire-and-forget: wake the three sub-apps so the first signup doesn't
+  // hit a cold start. Cheap fetch, ignored if it fails.
+  useEffect(() => {
+    fetch('/api/warmup').catch(() => {});
+  }, []);
+
   return (
     <div className="min-h-screen bg-white overflow-hidden text-gray-800">
       <motion.div className="scroll-progress-bar" style={{ scaleX: scrollYProgress }} />

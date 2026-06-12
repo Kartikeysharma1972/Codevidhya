@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { FiLogOut } from 'react-icons/fi';
-import { useAuth, dashboardPathFor } from '../contexts/AuthContext';
+import { FiLogOut, FiRefreshCw } from 'react-icons/fi';
+import { useAuth, dashboardPathFor, readHandoff } from '../contexts/AuthContext';
+import { authAPI } from '../utils/api';
 import LogoMark from '../components/LogoMark';
 
-// Where each role-app is hosted. In dev these fall back to the local Vite ports.
-// In production set VITE_STUDENT_URL / VITE_TEACHER_URL / VITE_ADMIN_URL at build
-// time on the portal Render service so the iframe loads the deployed sub-app.
 const TARGETS = {
   student: import.meta.env.VITE_STUDENT_URL || 'http://localhost:5173',
   teacher: import.meta.env.VITE_TEACHER_URL || 'http://localhost:5176',
@@ -23,40 +21,63 @@ function b64(obj) {
   return btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
 }
 
+function buildIframeUrl(role, handoff) {
+  let base = TARGETS[role];
+  if (handoff && handoff.token) {
+    const payload = { role, token: handoff.token, user: handoff.user };
+    const sep = base.includes('?') ? '&' : '?';
+    base = `${base}${sep}cv_handoff=${encodeURIComponent(b64(payload))}`;
+  }
+  return base;
+}
+
 export default function EmbeddedApp({ expected }) {
   const { user, loading, logout } = useAuth();
   const navigate = useNavigate();
   const computedRef = useRef(false);
   const [src, setSrc] = useState(null);
+  const [status, setStatus] = useState('booting'); // booting | ready | failed
 
-  // Compute the iframe URL once, on first render where user/handoff are ready.
-  // Using a ref guard so React 18 StrictMode's double-effect doesn't burn the
-  // single-use handoff token from sessionStorage.
   useEffect(() => {
     if (computedRef.current) return;
     if (loading || !user) return;
     if (user.role !== expected) return;
     computedRef.current = true;
 
-    let base = TARGETS[expected];
-
-    let handoff = null;
-    try {
-      const raw = sessionStorage.getItem('cv_handoff');
-      if (raw) {
-        handoff = JSON.parse(raw);
-        sessionStorage.removeItem('cv_handoff');
-      }
-    } catch { /* ignore */ }
-
+    const handoff = readHandoff();
     if (handoff && handoff.token) {
-      const payload = { role: expected, token: handoff.token, user: handoff.user };
-      const sep = base.includes('?') ? '&' : '?';
-      base = `${base}${sep}cv_handoff=${encodeURIComponent(b64(payload))}`;
+      setSrc(buildIframeUrl(expected, handoff));
+      setStatus('ready');
+      return;
     }
 
-    setSrc(base);
+    // No persisted handoff (cold-start during signup may have skipped it).
+    // Politely show "warming up", then mount the iframe without a handoff so
+    // the user can finish via the sub-app's own login as a last-resort.
+    setStatus('warming');
+    const fallback = setTimeout(() => {
+      setSrc(buildIframeUrl(expected, null));
+      setStatus('failed');
+    }, 12000);
+    return () => clearTimeout(fallback);
   }, [user, loading, expected]);
+
+  const onRetry = async () => {
+    setStatus('booting');
+    try {
+      // Re-fetch current portal session; if the server can re-mirror, /me will
+      // include a fresh handoff (server-side persistence below).
+      const res = await authAPI.me();
+      if (res.data?.handoff?.token) {
+        localStorage.setItem('cv_handoff_v2', JSON.stringify(res.data.handoff));
+        setSrc(buildIframeUrl(expected, res.data.handoff));
+        setStatus('ready');
+        return;
+      }
+    } catch { /* ignore */ }
+    setStatus('failed');
+    setSrc(buildIframeUrl(expected, null));
+  };
 
   const onLogout = () => {
     logout();
@@ -77,7 +98,7 @@ export default function EmbeddedApp({ expected }) {
 
   return (
     <div className="fixed inset-0 flex flex-col bg-gray-50">
-      <header className="flex items-center justify-between gap-4 h-12 px-4 bg-white border-b border-gray-100 shadow-[0_1px_0_rgba(15,23,42,0.04)] flex-shrink-0 z-10">
+      <header className="flex items-center justify-between gap-4 h-12 px-4 bg-white border-b border-gray-100 flex-shrink-0 z-10">
         <LogoMark linkTo={null} />
         <div className="hidden sm:flex items-center gap-2 text-[12.5px] text-gray-500">
           <span className="px-2 py-0.5 rounded-full bg-primary-50 text-primary-700 font-semibold">
@@ -86,16 +107,28 @@ export default function EmbeddedApp({ expected }) {
           <span className="text-gray-400">·</span>
           <span className="font-medium text-gray-700">{user.name}</span>
         </div>
-        <button
-          onClick={onLogout}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold text-gray-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
-        >
-          <FiLogOut size={14} /> Logout
-        </button>
+        <div className="flex items-center gap-2">
+          {status === 'failed' && (
+            <button
+              onClick={onRetry}
+              title="Retry auto-login"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors"
+            >
+              <FiRefreshCw size={13} /> Retry
+            </button>
+          )}
+          <button
+            onClick={onLogout}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold text-gray-600 hover:text-primary-700 hover:bg-primary-50 transition-colors"
+          >
+            <FiLogOut size={14} /> Logout
+          </button>
+        </div>
       </header>
 
       {src ? (
         <iframe
+          key={src}
           src={src}
           title={`${headerLabel} workspace`}
           className="flex-1 w-full border-0"
@@ -103,7 +136,17 @@ export default function EmbeddedApp({ expected }) {
         />
       ) : (
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+          <div className="text-center max-w-md px-6">
+            <div className="w-12 h-12 mx-auto border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+            <p className="mt-5 font-display font-bold text-gray-800">
+              Setting up your {headerLabel} workspace…
+            </p>
+            <p className="mt-2 text-[13.5px] text-gray-500 leading-relaxed">
+              First-time logins on the free tier take a few seconds while we
+              wake the dashboard server. Stay here — we'll land you inside
+              automatically.
+            </p>
+          </div>
         </div>
       )}
     </div>

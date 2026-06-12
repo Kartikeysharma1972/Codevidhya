@@ -29,6 +29,43 @@ mongoose
 app.use('/api/auth', authRoutes);
 app.get('/api/health', (req, res) => res.json({ status: 'ok', service: 'codevidhya-portal' }));
 
+// ─── Sub-app warm-up ──────────────────────────────────────────────────────
+// Render free tier sleeps services after 15 min of inactivity. A cold wake
+// can be 30–60 s, which kills the first signup that has to mirror into a
+// sleeping sub-app. We poke each sub-app's health endpoint on portal startup
+// and again whenever the landing page is loaded, so by the time a user
+// finishes the signup form, the targets are already awake.
+const SUB_APPS = [
+  { name: 'student', url: process.env.STUDENT_APP_URL || 'http://localhost:5000', path: '/api/health' },
+  { name: 'teacher', url: process.env.TEACHER_APP_URL || 'http://localhost:8001', path: '/api/health' },
+  { name: 'admin',   url: process.env.ADMIN_APP_URL   || 'http://localhost:5001', path: '/api/auth/me' },
+];
+
+async function warmupAll() {
+  const ac = new AbortController();
+  const timer = setTimeout(() => ac.abort(), 60_000);
+  const results = await Promise.allSettled(
+    SUB_APPS.map((s) =>
+      fetch(`${s.url}${s.path}`, { signal: ac.signal })
+        .then((r) => ({ name: s.name, status: r.status }))
+        .catch((e) => ({ name: s.name, status: 0, error: e.message }))
+    )
+  );
+  clearTimeout(timer);
+  return results.map((r) => (r.status === 'fulfilled' ? r.value : { error: String(r.reason) }));
+}
+
+app.get('/api/warmup', async (req, res) => {
+  const out = await warmupAll();
+  res.json({ warmed: out });
+});
+
+// First warmup on boot.
+warmupAll().then((out) => {
+  const summary = out.map((o) => `${o.name}:${o.status ?? '?'}`).join(' ');
+  console.log('Warmed sub-apps →', summary);
+});
+
 // ─── Gateway proxy for the unified single-portal deployment ────────────────
 // In production a single domain serves everything. We mount the three
 // existing apps under /student, /teacher and /admin so users never hop
