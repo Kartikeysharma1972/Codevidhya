@@ -7,8 +7,8 @@ export NVM_DIR="$HOME/.nvm"
 . "$NVM_DIR/nvm.sh"
 nvm install 18
 
-# Build frontend
-npm --prefix frontend install
+# Build frontend (force devDeps — Render sets NODE_ENV=production which skips them)
+npm --prefix frontend install --include=dev
 npm --prefix frontend run build
 
 # Install Python dependencies
