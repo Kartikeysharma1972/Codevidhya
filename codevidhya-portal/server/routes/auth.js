@@ -105,6 +105,17 @@ async function persistMirror(user, handoff) {
   await user.save();
 }
 
+// The sub-apps run on Render's free tier and spin down after 15 min idle, so a
+// fresh mirror call can come back empty during a cold start. When that happens
+// for a returning user, fall back to the sub-app token we stored last time —
+// it's a 7-day JWT, so they still land straight on their dashboard instead of
+// the sub-app's own login page.
+function resolveHandoff(handoff, user) {
+  if (handoff && handoff.token) return handoff;
+  if (user.subAppToken) return { token: user.subAppToken, user: user.subAppUser };
+  return null;
+}
+
 router.post('/signup', async (req, res) => {
   try {
     const { name, email, schoolName, role, grade, password } = req.body || {};
@@ -137,12 +148,13 @@ router.post('/signup', async (req, res) => {
       password,
     });
 
-    const handoff = await mirrorAuth({
+    let handoff = await mirrorAuth({
       role, name: name.trim(), email: cleanEmail, password,
       schoolName: schoolName.trim(),
       grade: role === 'student' ? Number(grade) : undefined,
     });
     await persistMirror(user, handoff);
+    handoff = resolveHandoff(handoff, user);
 
     return res.status(201).json({
       token: portalToken(user),
@@ -167,11 +179,12 @@ router.post('/login', async (req, res) => {
     const ok = await user.comparePassword(password);
     if (!ok) return res.status(401).json({ error: 'Invalid credentials.' });
 
-    const handoff = await mirrorAuth({
+    let handoff = await mirrorAuth({
       role: user.role, name: user.name, email: cleanEmail, password,
       schoolName: user.schoolName, grade: user.grade,
     });
     await persistMirror(user, handoff);
+    handoff = resolveHandoff(handoff, user);
 
     return res.json({
       token: portalToken(user),

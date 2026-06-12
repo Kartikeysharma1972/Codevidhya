@@ -131,7 +131,8 @@ export default function EmbeddedApp({ expected }) {
           key={src}
           src={src}
           title={`${headerLabel} workspace`}
-          className="flex-1 w-full border-0"
+          className="border-0 block"
+          style={{ width: '100%', height: 'calc(100vh - 48px)', display: 'block' }}
           allow="clipboard-read; clipboard-write; fullscreen; microphone; camera"
         />
       ) : (
