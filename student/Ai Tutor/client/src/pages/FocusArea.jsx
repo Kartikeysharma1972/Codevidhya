@@ -5,6 +5,7 @@ import { FiDownload, FiEye, FiEyeOff, FiBookOpen, FiMap, FiHelpCircle, FiEdit3, 
 import AppLayout from '../components/AppLayout';
 import PageHeader from '../components/PageHeader';
 import ChatMarkdown from '../components/ChatMarkdown';
+import MindMap from '../components/MindMap';
 import { useAuth } from '../contexts/AuthContext';
 import { aiAPI, curriculumAPI } from '../utils/api';
 import toast from 'react-hot-toast';
@@ -91,16 +92,24 @@ function parsePracticeQA(markdown) {
   const cards = [];
 
   for (const block of blocks) {
-    const trimmed = block.trim();
+    // Drop the "## ✍️ Practice Questions" heading and any stray heading lines
+    // so they never get rendered as a fake question card.
+    const trimmed = block
+      .split('\n')
+      .filter(l => !/^\s*#{1,6}\s/.test(l))
+      .join('\n')
+      .trim();
     if (!trimmed || trimmed.length < 10) continue;
 
+    const cleanQ = (q) => q.replace(/^\s*(?:\*\*)?(?:Q\d*[\.:]\s*|Question\s*\d*[\.:]\s*|\d+[\.\)]\s*)(?:\*\*)?/i, '').trim();
     const answerMatch = trimmed.match(/\n\s*(?:A[\.:]\s*|(?:\*\*)?Answer[\.:]\s*(?:\*\*)?)([\s\S]*)/i);
     if (answerMatch) {
-      const question = trimmed.substring(0, answerMatch.index).trim();
+      const question = cleanQ(trimmed.substring(0, answerMatch.index).trim());
       const answer = answerMatch[1].trim();
       if (question && answer) cards.push({ question, answer });
-    } else {
-      cards.push({ question: trimmed, answer: '' });
+    } else if (/\?\s*$/.test(trimmed) || /^\s*(?:Q\d*[\.:]|\d+[\.\)])/i.test(trimmed)) {
+      // A genuine question with no parsed answer — keep it (still no answer shown).
+      cards.push({ question: cleanQ(trimmed), answer: '' });
     }
   }
 
@@ -300,8 +309,13 @@ export default function FocusArea() {
                     ))}
                   </div>
                 ) : (
-                  <ChatMarkdown content={sections.practice || 'No practice questions available.'} />
+                  <p className="text-sm text-gray-400">No practice questions available.</p>
                 )
+              ) : activeTab === 'mindmap' ? (
+                <MindMap
+                  markdown={sections.mindmap}
+                  fallback={<ChatMarkdown content={sections.mindmap || 'Mind map not available for this section.'} />}
+                />
               ) : (
                 <ChatMarkdown content={sections[activeTab] || 'Content not available for this section.'} />
               )}

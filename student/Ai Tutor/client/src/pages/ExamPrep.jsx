@@ -45,6 +45,12 @@ const questionTypeOptions = [
   { value: 'code-output', label: 'Code Output' },
 ];
 
+// Coding questions only make sense for Computer Science.
+const isComputerScience = (subject) => {
+  const s = (subject || '').toLowerCase();
+  return s.includes('computer') || s.includes('informatics') || s.includes('coding') || /(^|[^a-z])cs([^a-z]|$)/.test(s);
+};
+
 const questionCountOptions = [10, 15, 20, 25, 30];
 
 export default function ExamPrep() {
@@ -68,6 +74,10 @@ export default function ExamPrep() {
     if (subject && user?.grade) {
       curriculumAPI.getChapters(user.grade, subject).then(res => setChapters(res.data.chapters)).catch(() => {});
       setSelectedChapters([]);
+      // Drop a leftover "Code Output" pick when moving to a non-CS subject.
+      if (!isComputerScience(subject)) {
+        setQuestionType(prev => (prev === 'code-output' ? '' : prev));
+      }
     }
   }, [subject, user?.grade]);
 
@@ -215,9 +225,11 @@ export default function ExamPrep() {
                       onChange={e => setQuestionType(e.target.value)}
                       className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:border-primary-400 focus:ring-2 focus:ring-primary-100 outline-none text-sm bg-white"
                     >
-                      {questionTypeOptions.map(opt => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
+                      {questionTypeOptions
+                        .filter(opt => opt.value !== 'code-output' || isComputerScience(subject))
+                        .map(opt => (
+                          <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
                     </select>
                     <p className="mt-1 text-[10.5px] text-gray-400">
                       {questionType === '' ? 'Mix of all question types' : questionType === 'surprise' ? 'AI picks an interesting mix for you' : `All questions will be ${questionTypeOptions.find(o => o.value === questionType)?.label}`}

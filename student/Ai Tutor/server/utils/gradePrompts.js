@@ -115,7 +115,7 @@ export function getGradeBehavior(grade) {
   return behaviors[group];
 }
 
-function getQuestionTypeSchema(gradeGroup) {
+function getQuestionTypeSchema(gradeGroup, includeCode = false) {
   const common = `
 --- MCQ ---
 {"question":"...", "type":"mcq", "options":["A","B","C","D"], "correctAnswer":"exact option text", "difficulty":"easy|medium|hard", "topic":"...", "explanation":"...", "studyNotes":"..."}
@@ -186,14 +186,14 @@ function getQuestionTypeSchema(gradeGroup) {
     'primary-lower': common + matchFollowing,
     'primary-upper': common + matchFollowing + sequenceOrdering,
     'middle': common + matchFollowing + sequenceOrdering + assertionReason + caseStudy + oneWord,
-    'secondary': common + assertionReason + caseStudy + numerical + hots + codeOutput,
-    'senior-secondary': common + assertionReason + caseStudy + numerical + multiSelect + integerType + matrixMatch + codeOutput,
+    'secondary': common + assertionReason + caseStudy + numerical + hots + (includeCode ? codeOutput : ''),
+    'senior-secondary': common + assertionReason + caseStudy + numerical + multiSelect + integerType + matrixMatch + (includeCode ? codeOutput : ''),
   };
 
   return schemas[gradeGroup] || schemas['middle'];
 }
 
-function getQuestionTypeDistribution(gradeGroup, totalQuestions) {
+function getQuestionTypeDistribution(gradeGroup, totalQuestions, includeCode = false) {
   const distributions = {
     'primary-lower': { 'mcq': 0.35, 'true-false': 0.25, 'fill-blank': 0.20, 'match-following': 0.20 },
     'primary-upper': { 'mcq': 0.27, 'true-false': 0.13, 'fill-blank': 0.20, 'match-following': 0.20, 'sequence-ordering': 0.20 },
@@ -202,7 +202,12 @@ function getQuestionTypeDistribution(gradeGroup, totalQuestions) {
     'senior-secondary': { 'mcq': 0.13, 'true-false': 0.07, 'fill-blank': 0.07, 'assertion-reason': 0.10, 'case-study': 0.13, 'numerical': 0.13, 'multi-select': 0.10, 'integer-type': 0.10, 'matrix-match': 0.07, 'code-output': 0.10 },
   };
 
-  const dist = distributions[gradeGroup] || distributions['middle'];
+  const dist = { ...(distributions[gradeGroup] || distributions['middle']) };
+  // Drop coding questions for non-CS subjects and fold their weight into MCQs.
+  if (!includeCode && dist['code-output']) {
+    dist['mcq'] = (dist['mcq'] || 0) + dist['code-output'];
+    delete dist['code-output'];
+  }
   const types = Object.entries(dist);
   let remaining = totalQuestions;
   const result = [];
@@ -217,7 +222,7 @@ function getQuestionTypeDistribution(gradeGroup, totalQuestions) {
   return result.join('\n');
 }
 
-export function getExpectedTypes(grade) {
+export function getExpectedTypes(grade, includeCode = false) {
   const gradeGroup = getGradeGroup(grade);
   const typeMap = {
     'primary-lower': ['mcq', 'true-false', 'fill-blank', 'match-following'],
@@ -226,7 +231,9 @@ export function getExpectedTypes(grade) {
     'secondary': ['mcq', 'true-false', 'fill-blank', 'assertion-reason', 'case-study', 'numerical', 'hots', 'code-output'],
     'senior-secondary': ['mcq', 'true-false', 'fill-blank', 'assertion-reason', 'case-study', 'numerical', 'multi-select', 'integer-type', 'matrix-match', 'code-output'],
   };
-  return typeMap[gradeGroup] || typeMap['middle'];
+  let types = typeMap[gradeGroup] || typeMap['middle'];
+  if (!includeCode) types = types.filter(t => t !== 'code-output');
+  return types;
 }
 
 const textbookMap = {
@@ -320,9 +327,17 @@ const textbookMap = {
   },
 };
 
+// Coding "code-output" questions only make sense for Computer Science. For
+// every other subject they're noise, so we gate them on the subject.
+export function isComputerScience(subject) {
+  const s = String(subject || '').toLowerCase();
+  return s.includes('computer') || s.includes('informatics') || s.includes('coding') || /(^|[^a-z])cs([^a-z]|$)/.test(s);
+}
+
 // Maps the new split subject names back to the textbookMap keys.
 function resolveTextbookKey(subject) {
   const s = subject.toLowerCase();
+  if (s.includes('computer') || s.includes('informatics') || s === 'cs') return 'CS';
   if (s.includes('english')) return 'English';
   if (s.includes('hindi')) return 'Hindi';
   if (s.includes('social science') || s === 'sst' || s.includes('history') || s.includes('geography') || s.includes('civics') || s.includes('political') || s.includes('economics')) return 'SST';
@@ -515,61 +530,71 @@ GENERAL RULES:
 
   if (tool === 'project-generator') {
     const count = extra.count || 4;
+    const avoidIdeas = Array.isArray(extra.avoidIdeas) ? extra.avoidIdeas.filter(Boolean) : [];
+    const avoidIdeasBlock = avoidIdeas.length
+      ? `
+🚫 ALREADY SUGGESTED — the student has already seen the project ideas below. You MUST NOT repeat any of them, not even reworded or with a tweaked angle. Every idea you produce now must be genuinely NEW and clearly different:
+${avoidIdeas.slice(0, 40).map((t, i) => `${i + 1}. ${t}`).join('\n')}
+`
+      : '';
     systemPrompt += `
 TOOL: Project Ideas Generator
 SUBJECT: ${extra.subject || 'General'}
 PROJECT TYPE: ${extra.projectType || 'Any'}
 ${extra.topic ? `SPECIFIC TOPIC: ${extra.topic}` : ''}
-
-Generate EXACTLY ${count} project ideas — each one DISTINCT in approach (not minor variations of each other).
+${avoidIdeasBlock}
+Generate EXACTLY ${count} project ideas — each one DISTINCT in approach (not minor variations of each other), and each one FRESH and original (no recycled, textbook-cliché projects).
 Mix difficulty levels: include at least one Easy, one Medium, and one Hard option across the ${count}.
 
-Format EACH idea EXACTLY like this (use markdown):
+Format EACH idea EXACTLY like this premium layout (use markdown, keep the spacing):
 
 ---
 
-### Idea N — [Creative, specific title]
+## 💡 Idea N — <Creative, specific, catchy title>
 
-**What it is:**
+> <one punchy line on why this project is genuinely exciting>
+
+**🎯 What you'll build**
 2-3 sentence overview of the project and its learning goal.
 
-**Materials / Tools needed:**
-- [item 1]
-- [item 2]
-- [item 3]
+**🧰 Materials / Tools**
+- <item 1>
+- <item 2>
+- <item 3>
 
-**Step-by-step guide:**
-1. [step 1]
-2. [step 2]
-3. [step 3]
-4. [step 4]
+**🛠️ Step-by-step**
+1. <step 1>
+2. <step 2>
+3. <step 3>
+4. <step 4>
 
-| Detail | Info |
-|---|---|
-| **Effort Level** | Easy / Medium / Hard |
-| **Time Required** | e.g. "1 weekend", "1-2 weeks" |
-| **CBSE Connection** | Which chapter/topic this maps to |
+**📊 At a glance**
 
-**Why this is cool:** 1 sentence on what makes this project genuinely interesting (not generic).
+| 🔥 Effort | ⏱️ Time | 🧠 Skills built | 📘 CBSE link |
+|---|---|---|---|
+| Easy / Medium / Hard | e.g. "1 weekend" | <skills> | <chapter/topic> |
+
+**🌟 Wow factor:** <1 sentence on what makes this stand out>
 
 ---
 
 GUIDELINES:
-- Calibrate complexity to a Class ${grade} student — what's age-appropriate, achievable, and engaging.
+- Calibrate complexity to a Class ${grade} student — age-appropriate, achievable, and engaging.
 - Stay aligned with the CBSE/NCERT scope of the subject.
-- AVOID cliché ideas (e.g. "make a model of the solar system", "build a volcano") unless explicitly fresh.
+- BE ORIGINAL — avoid clichés ("model of the solar system", "build a volcano", "working model of a hydraulic lift") unless given a genuinely fresh twist.
 - Each idea should feel different — vary the project TYPE (model, presentation, experiment, app, poster, research) if "Any" was selected.
 - If "${extra.projectType || 'Any'}" is a specific type, all ${count} ideas should fit that type but explore different angles within it.
-- Be CONCRETE — name specific materials, specific steps. No vague hand-waving.
-- Use clean markdown formatting with proper spacing between sections.
+- Be CONCRETE — name specific materials and specific steps. No vague hand-waving.
+- Use clean markdown with proper spacing so the output looks polished.
 `;
   }
 
   if (tool === 'mock-test') {
     const testConfig = getMockTestConfig(grade);
     const overrideCount = extra.questionCount || testConfig.totalQuestions;
-    const typeSchemas = getQuestionTypeSchema(gradeGroup);
-    const typeDistribution = getQuestionTypeDistribution(gradeGroup, overrideCount);
+    const includeCode = isComputerScience(extra.subject);
+    const typeSchemas = getQuestionTypeSchema(gradeGroup, includeCode);
+    const typeDistribution = getQuestionTypeDistribution(gradeGroup, overrideCount, includeCode);
     const textbook = getTextbookInfo(grade, extra.subject);
     const wantSpecificType = extra.questionType && extra.questionType !== 'surprise';
     const avoidList = Array.isArray(extra.avoidQuestions) ? extra.avoidQuestions.filter(Boolean) : [];
@@ -585,6 +610,7 @@ SUBJECT: ${extra.subject}
 CHAPTERS: ${extra.chapters?.join(', ') || 'All'}
 ${textbook ? `REFERENCE TEXTBOOK: ${textbook} — Generate questions matching the style, difficulty, and exercise patterns found in this textbook.` : ''}
 ${wantSpecificType ? `QUESTION TYPE FILTER: Generate ALL questions of type "${extra.questionType}" ONLY. Do NOT mix other types.` : ''}
+${includeCode ? '' : `🚫 NO CODING QUESTIONS: This is NOT a Computer Science test. Do NOT include any code snippets, "what is the output of this code", programming, or "code-output" questions. Every question must test the actual ${extra.subject} concepts — not programming.`}
 ${avoidBlock}
 ZERO-REPEAT RULE: Inside THIS test, every question must be unique — no two questions may test the same fact with the same wording. Vary the concept, angle, and numbers across questions.
 
@@ -627,6 +653,18 @@ IMPORTANT:
     const textbook = getTextbookInfo(grade, extra.subject);
     const hasTopic = !!(extra.topic && String(extra.topic).trim());
     const studyTarget = hasTopic ? `"${extra.topic}"` : `the entire chapter "${extra.chapter}"`;
+    const subjLower = String(extra.subject || '').toLowerCase();
+    // Formula-heavy subjects keep a "Key Formulas & Definitions" section; for
+    // everything else (languages, literature, social science, CS theory, bio)
+    // a "Key Points & Findings" section reads far more naturally.
+    const isFormulaSubject = /(math|physic|chemis|accountan|statistic)/.test(subjLower)
+      || (subjLower.includes('science') && !subjLower.includes('social') && !subjLower.includes('computer'));
+    const keyHeading = isFormulaSubject ? '## 📐 Key Formulas & Definitions' : '## 🔑 Key Points & Findings';
+    const keyGuidance = isFormulaSubject
+      ? (grade >= 6
+          ? 'List every important formula, theorem, equation, and definition — one per bullet. Show formulas in LaTeX and briefly say what each symbol means.'
+          : 'List the key terms and their simple meanings, one per bullet.')
+      : 'List the most important points, facts, findings, and definitions the student MUST remember for the exam — one crisp bullet each, with the **key term bolded** at the start of the bullet.';
     systemPrompt += `
 TOOL: Focus Area — Deep Study
 SUBJECT: ${extra.subject}
@@ -639,27 +677,50 @@ ${hasTopic
 - If "${extra.topic}" is a subtopic or natural part of the chapter "${extra.chapter}", focus tightly on that subtopic and use the chapter as supporting context.
 - If "${extra.topic}" is NOT part of the chapter (the student picked an unrelated topic, possibly from another chapter or subject), prioritize the topic itself — provide complete study material on "${extra.topic}" and only mention the chapter if it provides useful background.
 - Either way, deliver useful, comprehensive study material — never refuse because the topic doesn't match.`
-  : `SCOPE: Cover the ENTIRE chapter "${extra.chapter}" comprehensively. Walk through every major subtopic, key formulas/definitions, and exam-worthy points.`
+  : `SCOPE: Cover the ENTIRE chapter "${extra.chapter}" comprehensively. Walk through every major subtopic and exam-worthy point.`
 }
 
-Provide comprehensive study material with these sections:
+Produce the study material using EXACTLY these five sections, in this order, with these exact headings:
 
 ## 📚 Complete Concept Explanation
-Full explanation of ${studyTarget} calibrated to Class ${grade} level. ${hasTopic ? 'Cover all subtopics relevant to this topic.' : 'Cover every major subtopic in the chapter, in a logical order.'}
+Full, well-structured explanation of ${studyTarget} calibrated to Class ${grade} level. ${hasTopic ? 'Cover all subtopics relevant to this topic.' : 'Cover every major subtopic in the chapter, in a logical order.'} Use subheadings (###), short paragraphs, **bold** for key terms, and tables where they make a comparison clearer.
 
-## 📐 Key Formulas & Definitions
-${grade >= 6 ? 'List all relevant formulas, theorems, and definitions.' : 'List key terms and their simple meanings.'}
+${keyHeading}
+${keyGuidance}
 
 ## 🗺️ Mind Map
-Create a text-based mind map / concept tree showing how subtopics connect.
+Output the mind map as a STRICT nested bullet list — it is parsed by a visual diagram renderer, so follow this format EXACTLY:
+- Start with ONE root bullet: the central idea (the chapter/topic name).
+- Indent each deeper level by exactly 2 more spaces. Go up to 3 levels deep.
+- Use ONLY "- " bullets. NO numbering, NO bold/asterisks, NO blank lines inside the map, NO sentences.
+- Each node is a SHORT label (2–5 words), not an explanation.
+
+Follow this shape exactly:
+- ${hasTopic ? extra.topic : extra.chapter}
+  - First main branch
+    - key sub-point
+    - key sub-point
+  - Second main branch
+    - key sub-point
+  - Third main branch
+    - key sub-point
 
 ## 📝 Frequently Asked Exam Questions
-${hasTopic ? '5-6' : '8-10'} questions that commonly appear in CBSE exams on ${hasTopic ? 'this topic' : 'this chapter'}, each with a detailed answer.
+Give ${hasTopic ? '5-6' : '8-10'} high-yield questions that commonly appear in CBSE exams on ${hasTopic ? 'this topic' : 'this chapter'}. Format EACH one EXACTLY like this (keep the blank line between questions):
+
+**Q1. <the question>**
+🏷️ *<marks & type, e.g. "3 Marks · Short Answer">*
+> <a crisp, well-structured model answer — use **bold** key terms and short bullet points inside the answer where it helps>
 
 ## ✍️ Practice Questions
-${hasTopic ? '5-6' : '8-10'} practice questions with answers (format: "Q: question" on one line, then "A: answer" on the next).
+Give ${hasTopic ? '5-6' : '8-10'} practice questions for self-testing. The answer is HIDDEN until the student taps "Reveal", so NEVER show the answer inside the question. Format EACH one EXACTLY like this, each on its own line:
 
-Use markdown formatting. Be thorough and exam-focused.
+Q: <the question>
+A: <the complete answer>
+
+Use exactly the "Q:" and "A:" prefixes — one Q line then one A line per question.
+
+Use clean markdown throughout. Be thorough, accurate, and exam-focused.
 `;
   }
 

@@ -7,7 +7,7 @@ import authMiddleware from '../middleware/auth.js';
 import User from '../models/User.js';
 import Session from '../models/Session.js';
 import TestAttempt from '../models/TestAttempt.js';
-import { buildSystemPrompt, getMockTestConfig, getExpectedTypes } from '../utils/gradePrompts.js';
+import { buildSystemPrompt, getMockTestConfig, getExpectedTypes, isComputerScience } from '../utils/gradePrompts.js';
 import { searchWikipediaImage, searchMultipleImages } from '../utils/imageSearch.js';
 import { getAvoidList, dedupeAgainst, recordQuestions } from '../utils/questionMemory.js';
 
@@ -338,19 +338,48 @@ router.post('/summarize', authMiddleware, upload.single('file'), async (req, res
 });
 
 // ---------- PROJECT IDEA GENERATOR ----------
+// Pull the titles of project ideas this student has already been shown for the
+// same subject, so regenerations keep producing genuinely new ideas.
+async function getRecentProjectTitles(userId, subject, limit = 40) {
+  try {
+    const sessions = await Session.find({ userId, tool: 'project-generator', 'metadata.subject': subject })
+      .sort({ updatedAt: -1 })
+      .limit(10)
+      .select('messages')
+      .lean();
+    const titles = [];
+    const re = /###?\s*(?:💡\s*)?Idea\s*\d+\s*[—\-:]\s*(.+)/g;
+    for (const s of sessions) {
+      for (const m of (s.messages || [])) {
+        if (m.role !== 'assistant' || typeof m.content !== 'string') continue;
+        let mt;
+        while ((mt = re.exec(m.content)) !== null) {
+          const t = mt[1].replace(/[*_`#]/g, '').trim();
+          if (t) titles.push(t);
+        }
+      }
+    }
+    return [...new Set(titles)].slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
 router.post('/project-ideas', authMiddleware, async (req, res) => {
   try {
     const { subject, projectType, topic, sessionId } = req.body;
     const user = await User.findById(req.userId);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
+    const avoidIdeas = await getRecentProjectTitles(req.userId, subject, 40);
+
     const systemPrompt = buildSystemPrompt(user.grade, 'project-generator', {
-      subject, projectType, topic, count: 4,
+      subject, projectType, topic, count: 4, avoidIdeas,
     });
 
     const aiResponse = await chatWithGroq(systemPrompt, [
-      { role: 'user', content: `Generate project ideas for ${subject}${topic ? ` on topic: ${topic}` : ''}, project type: ${projectType || 'any'}` },
-    ]);
+      { role: 'user', content: `Generate project ideas for ${subject}${topic ? ` on topic: ${topic}` : ''}, project type: ${projectType || 'any'}. Make them brand new — different from anything suggested before.` },
+    ], { temperature: 0.9, maxTokens: 5000 });
 
     let session;
     if (sessionId) {
@@ -377,16 +406,16 @@ router.post('/project-ideas', authMiddleware, async (req, res) => {
 });
 
 // ---------- MOCK TEST GENERATOR ----------
-function validateQuestionDiversity(questions, grade) {
-  const expectedTypes = getExpectedTypes(grade);
+function validateQuestionDiversity(questions, grade, subject) {
+  const expectedTypes = getExpectedTypes(grade, isComputerScience(subject));
   const typesUsed = new Set(questions.map(q => q.type).filter(Boolean));
   // Demand at least half of the expected types (capped at 5) — prevents "all MCQ" tests
   const minTypesRequired = Math.min(5, Math.max(3, Math.ceil(expectedTypes.length / 2)));
   return typesUsed.size >= minTypesRequired;
 }
 
-function fixQuestionTypes(questions, grade) {
-  const expectedTypes = getExpectedTypes(grade);
+function fixQuestionTypes(questions, grade, subject) {
+  const expectedTypes = getExpectedTypes(grade, isComputerScience(subject));
   return questions.map(q => {
     if (!q.type || !expectedTypes.includes(q.type)) {
       if (q.options && q.options.length > 0) q.type = 'mcq';
@@ -461,8 +490,12 @@ router.post('/mock-test/generate', authMiddleware, async (req, res) => {
         questions = match ? JSON.parse(match[0]) : [];
       }
 
-      questions = fixQuestionTypes(questions, user.grade);
+      questions = fixQuestionTypes(questions, user.grade, subject);
       questions = sanitizeQuestions(questions);
+      // For non-CS subjects, hard-drop any coding questions the model slipped in.
+      if (!isComputerScience(subject)) {
+        questions = questions.filter(q => q.type !== 'code-output');
+      }
       // Drop anything already served to this student + any in-set duplicates.
       questions = dedupeAgainst(questions, avoid.hashes);
 
@@ -470,7 +503,7 @@ router.post('/mock-test/generate', authMiddleware, async (req, res) => {
       if (wantSpecificType) {
         if (questions.length >= minCount) break;
       } else {
-        if (questions.length >= minCount && validateQuestionDiversity(questions, user.grade)) break;
+        if (questions.length >= minCount && validateQuestionDiversity(questions, user.grade, subject)) break;
       }
     }
 

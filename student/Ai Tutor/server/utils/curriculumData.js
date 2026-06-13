@@ -4144,6 +4144,141 @@ export const curriculum = {
 }
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// Computer Science — added as a first-class subject for grades 6-12.
+// Three bands: middle (6-8), secondary (9-10), senior/Python (11-12).
+// ─────────────────────────────────────────────────────────────────────────
+const computerScience = {
+  middle: [
+    { name: 'Computer Fundamentals', unit: 'Foundations', desc: 'Parts of a computer, hardware vs software, input/output devices, CPU, and memory (RAM/ROM).' },
+    { name: 'Number Systems & How Data is Stored', unit: 'Foundations', desc: 'Bits and bytes, binary numbers, and how a computer represents text, numbers, and images.' },
+    { name: 'Operating System Basics', unit: 'Using a Computer', desc: 'Files and folders, the desktop/GUI, and managing an operating system like Windows.' },
+    { name: 'Word Processing & Office Tools', unit: 'Productivity', desc: 'Creating and formatting documents in MS Word; an intro to spreadsheets and presentations.' },
+    { name: 'Algorithms & Flowcharts', unit: 'Computational Thinking', desc: 'Breaking a problem into steps, flowchart symbols, sequence, decisions, and loops.' },
+    { name: 'Scratch / Block Programming', unit: 'Coding', desc: 'Sprites, events, loops, and conditions to build simple games and animations.' },
+    { name: 'Introduction to Python', unit: 'Coding', desc: 'print(), variables, input(), and writing simple arithmetic programs.' },
+    { name: 'Internet & the World Wide Web', unit: 'Connected World', desc: 'Browsers, search engines, email, URLs, and how websites work.' },
+    { name: 'HTML Basics', unit: 'Web', desc: 'Tags, headings, paragraphs, images, and links to build a simple web page.' },
+    { name: 'Cyber Safety & Digital Citizenship', unit: 'Safety', desc: 'Strong passwords, safe browsing, netiquette, and protecting your privacy online.' },
+    { name: 'Emerging Technologies', unit: 'Future Tech', desc: 'A friendly look at Artificial Intelligence, robotics, and how computers help in daily life.' },
+  ],
+  secondary: [
+    { name: 'Computer System & Components', unit: 'Hardware', desc: 'Hardware, software, the memory hierarchy, ports, and peripheral devices.' },
+    { name: 'Number Systems & Boolean Logic', unit: 'Foundations', desc: 'Binary, decimal and hexadecimal; logic gates (AND, OR, NOT) and truth tables.' },
+    { name: 'Programming in Python', unit: 'Python', desc: 'Variables, data types, operators, input/output, conditionals, and loops.' },
+    { name: 'Strings & Lists in Python', unit: 'Python', desc: 'Indexing, slicing, and common operations on strings and lists.' },
+    { name: 'Functions & Modular Programming', unit: 'Python', desc: 'Defining functions, parameters, return values, and why we reuse code.' },
+    { name: 'Data Handling & Spreadsheets', unit: 'Data', desc: 'Formulas, charts, and sorting/filtering data to draw conclusions.' },
+    { name: 'HTML & Web Page Design', unit: 'Web', desc: 'Page structure, formatting, lists, tables, images, and hyperlinks.' },
+    { name: 'Introduction to Databases', unit: 'Data', desc: 'What a database is — tables, records, fields, and simple queries.' },
+    { name: 'Computer Networks & the Internet', unit: 'Networks', desc: 'LAN/WAN, IP addresses, protocols, and how the internet moves data.' },
+    { name: 'Cyber Ethics & Security', unit: 'Safety', desc: 'Malware, phishing, safe practices, intellectual property, and your digital footprint.' },
+    { name: 'Introduction to Artificial Intelligence', unit: 'Future Tech', desc: 'What AI is, everyday applications, and the basic idea of machine learning.' },
+  ],
+  senior: [
+    { name: 'Computer System & Organisation', unit: 'Foundations', desc: 'Hardware, software, memory units, and Boolean logic underpinning computers.' },
+    { name: 'Python Programming Fundamentals', unit: 'Python', desc: 'Data types, operators, expressions, and input/output in Python.' },
+    { name: 'Control Flow', unit: 'Python', desc: 'Conditionals, loops, and nested control structures.' },
+    { name: 'Strings, Lists, Tuples & Dictionaries', unit: 'Python', desc: 'Core data structures — operations, methods, and manipulation.' },
+    { name: 'Functions & Modules', unit: 'Python', desc: 'User-defined functions, scope, and using built-in and library modules.' },
+    { name: 'File Handling', unit: 'Python', desc: 'Reading and writing text, binary, and CSV files.' },
+    { name: 'Data Structures: Stacks & Queues', unit: 'DSA', desc: 'Stack and queue operations, plus basic searching and sorting algorithms.' },
+    { name: 'Object-Oriented Programming', unit: 'Python', desc: 'Classes, objects, attributes, methods, and inheritance.' },
+    { name: 'Database Concepts & SQL', unit: 'Databases', desc: 'Relational model, DDL/DML, queries, functions, and joins.' },
+    { name: 'Computer Networks', unit: 'Networks', desc: 'Topologies, devices, protocols, and web technologies.' },
+    { name: 'Society, Law & Ethics', unit: 'Digital Society', desc: 'IPR, licensing, cybercrime, data privacy, and responsible computing.' },
+    { name: 'Data Management & Python–SQL Connectivity', unit: 'Databases', desc: 'Connecting Python to databases and an intro to data analysis with Pandas.' },
+  ],
+};
+
+function csBandForGrade(grade) {
+  const g = Number(grade);
+  if (g >= 6 && g <= 8) return 'middle';
+  if (g >= 9 && g <= 10) return 'secondary';
+  if (g >= 11 && g <= 12) return 'senior';
+  return null;
+}
+
+for (let g = 6; g <= 12; g++) {
+  const band = csBandForGrade(g);
+  if (band && curriculum[g]?.subjects && !curriculum[g].subjects['Computer Science']) {
+    curriculum[g].subjects['Computer Science'] = computerScience[band];
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// English Literature for grades 9 & 10 was stored as 3 bundled mega-entries
+// ("Selected Poems (Poems 1 to 8)" etc.), which hid the individual poems and
+// lessons from the chapter picker. Replace them with one entry per poem/lesson
+// so every piece shows up by name in the table of contents.
+// ─────────────────────────────────────────────────────────────────────────
+const englishLiteratureItemised = {
+  9: [
+    { name: 'The Fun They Had', unit: 'Beehive — Prose', desc: 'Isaac Asimov imagines a future of machine-led schooling; theme of how learning may change.' },
+    { name: 'The Sound of Music', unit: 'Beehive — Prose', desc: 'Evelyn Glennie and Bismillah Khan — triumph over odds and devotion to music.' },
+    { name: 'The Little Girl', unit: 'Beehive — Prose', desc: 'A child\'s changing relationship with her father; fear giving way to love.' },
+    { name: 'A Truly Beautiful Mind', unit: 'Beehive — Prose', desc: 'The life of Albert Einstein — genius, curiosity, and his concern for humanity.' },
+    { name: 'The Snake and the Mirror', unit: 'Beehive — Prose', desc: 'A humorous, suspenseful tale by a doctor and an unexpected visitor.' },
+    { name: 'My Childhood', unit: 'Beehive — Prose', desc: 'A. P. J. Abdul Kalam\'s early years, secularism, and the value of education.' },
+    { name: 'Reach for the Top', unit: 'Beehive — Prose', desc: 'Santosh Yadav and Maria Sharapova — grit, ambition, and reaching the summit.' },
+    { name: 'Kathmandu', unit: 'Beehive — Prose', desc: 'Vikram Seth\'s travel writing on two temples and the bustle of Kathmandu.' },
+    { name: 'If I Were You', unit: 'Beehive — Prose (Play)', desc: 'A witty one-act play where a man outsmarts an intruder.' },
+    { name: 'The Road Not Taken', unit: 'Beehive — Poetry', desc: 'Robert Frost on choices in life and the paths we take.' },
+    { name: 'Wind', unit: 'Beehive — Poetry', desc: 'Subramania Bharati on facing life\'s challenges with strength.' },
+    { name: 'Rain on the Roof', unit: 'Beehive — Poetry', desc: 'Coates Kinney on the comfort and memories stirred by rain.' },
+    { name: 'The Lake Isle of Innisfree', unit: 'Beehive — Poetry', desc: 'W. B. Yeats longs for peace in nature away from the city.' },
+    { name: 'A Legend of the Northland', unit: 'Beehive — Poetry', desc: 'Phoebe Cary\'s ballad on greed and its punishment.' },
+    { name: 'No Men Are Foreign', unit: 'Beehive — Poetry', desc: 'James Kirkup on universal brotherhood and the futility of war.' },
+    { name: 'On Killing a Tree', unit: 'Beehive — Poetry', desc: 'Gieve Patel on the resilience of nature and harm done by humans.' },
+    { name: 'A Slumber Did My Spirit Seal', unit: 'Beehive — Poetry', desc: 'William Wordsworth on death, nature, and acceptance.' },
+    { name: 'The Lost Child', unit: 'Moments — Supplementary', desc: 'Mulk Raj Anand — a child lost at a fair and the meaning of love over things.' },
+    { name: 'The Adventures of Toto', unit: 'Moments — Supplementary', desc: 'Ruskin Bond\'s humorous account of a mischievous pet monkey.' },
+    { name: 'Iswaran the Storyteller', unit: 'Moments — Supplementary', desc: 'A cook whose vivid stories blur fact and fiction.' },
+    { name: 'In the Kingdom of Fools', unit: 'Moments — Supplementary', desc: 'A folktale on the dangers of foolish rulers and quick wit.' },
+    { name: 'The Happy Prince', unit: 'Moments — Supplementary', desc: 'Oscar Wilde\'s tale of selflessness, compassion, and sacrifice.' },
+    { name: 'Weathering the Storm in Ersama', unit: 'Moments — Supplementary', desc: 'Surviving a super-cyclone and the spirit of community rebuilding.' },
+    { name: 'The Last Leaf', unit: 'Moments — Supplementary', desc: 'O. Henry on hope, friendship, and a painter\'s masterpiece.' },
+    { name: 'A House Is Not a Home', unit: 'Moments — Supplementary', desc: 'Recovering from loss and discovering what truly makes a home.' },
+    { name: 'The Beggar', unit: 'Moments — Supplementary', desc: 'Anton Chekhov on compassion and the transformation of a beggar.' },
+  ],
+  10: [
+    { name: 'A Letter to God', unit: 'First Flight — Prose', desc: 'G. L. Fuentes — unshakeable faith and irony in a farmer\'s letter to God.' },
+    { name: 'Nelson Mandela: Long Walk to Freedom', unit: 'First Flight — Prose', desc: 'Mandela on freedom, equality, and the end of apartheid.' },
+    { name: 'Two Stories about Flying', unit: 'First Flight — Prose', desc: 'His First Flight & The Black Aeroplane — courage and overcoming fear.' },
+    { name: 'From the Diary of Anne Frank', unit: 'First Flight — Prose', desc: 'A young girl\'s candid diary during the Holocaust.' },
+    { name: 'Glimpses of India', unit: 'First Flight — Prose', desc: 'A Baker from Goa, Coorg, and Tea from Assam — India\'s diversity.' },
+    { name: 'Mijbil the Otter', unit: 'First Flight — Prose', desc: 'Gavin Maxwell\'s playful pet otter and the bond between human and animal.' },
+    { name: 'Madam Rides the Bus', unit: 'First Flight — Prose', desc: 'A little girl\'s curiosity and her first solo bus journey.' },
+    { name: 'The Sermon at Benares', unit: 'First Flight — Prose', desc: 'Gautama Buddha on suffering, death, and acceptance.' },
+    { name: 'The Proposal', unit: 'First Flight — Prose (Play)', desc: 'Anton Chekhov\'s comic one-act play about a quarrelsome marriage proposal.' },
+    { name: 'Dust of Snow', unit: 'First Flight — Poetry', desc: 'Robert Frost on small moments that change a mood and a day.' },
+    { name: 'Fire and Ice', unit: 'First Flight — Poetry', desc: 'Robert Frost on desire and hatred as forces of destruction.' },
+    { name: 'A Tiger in the Zoo', unit: 'First Flight — Poetry', desc: 'Leslie Norris contrasts a caged tiger with freedom in the wild.' },
+    { name: 'How to Tell Wild Animals', unit: 'First Flight — Poetry', desc: 'Carolyn Wells\' humorous guide to identifying dangerous animals.' },
+    { name: 'The Ball Poem', unit: 'First Flight — Poetry', desc: 'John Berryman on loss and learning responsibility.' },
+    { name: 'Amanda!', unit: 'First Flight — Poetry', desc: 'Robin Klein on a child\'s longing for freedom from constant nagging.' },
+    { name: 'The Trees', unit: 'First Flight — Poetry', desc: 'Adrienne Rich on nature reclaiming its freedom.' },
+    { name: 'Fog', unit: 'First Flight — Poetry', desc: 'Carl Sandburg\'s short metaphor comparing fog to a cat.' },
+    { name: 'The Tale of Custard the Dragon', unit: 'First Flight — Poetry', desc: 'Ogden Nash\'s ballad on courage hidden behind appearances.' },
+    { name: 'For Anne Gregory', unit: 'First Flight — Poetry', desc: 'W. B. Yeats on inner worth versus outer beauty.' },
+    { name: 'A Triumph of Surgery', unit: 'Footprints without Feet — Supplementary', desc: 'James Herriot\'s humorous tale of a pampered, overfed dog.' },
+    { name: 'The Thief\'s Story', unit: 'Footprints without Feet — Supplementary', desc: 'Ruskin Bond on trust, change, and a young thief\'s conscience.' },
+    { name: 'The Midnight Visitor', unit: 'Footprints without Feet — Supplementary', desc: 'Robert Arthur\'s spy story built on wit over action.' },
+    { name: 'A Question of Trust', unit: 'Footprints without Feet — Supplementary', desc: 'Victor Canning — a burglar outwitted by another.' },
+    { name: 'Footprints without Feet', unit: 'Footprints without Feet — Supplementary', desc: 'H. G. Wells on the misuse of science by an invisible man.' },
+    { name: 'The Making of a Scientist', unit: 'Footprints without Feet — Supplementary', desc: 'Robert Ebert Baker on curiosity that builds a scientist.' },
+    { name: 'The Necklace', unit: 'Footprints without Feet — Supplementary', desc: 'Guy de Maupassant on vanity, pride, and a costly illusion.' },
+    { name: 'Bholi', unit: 'Footprints without Feet — Supplementary', desc: 'K. A. Abbas on education empowering a neglected girl.' },
+    { name: 'The Book That Saved the Earth', unit: 'Footprints without Feet — Supplementary (Play)', desc: 'Claire Boiko\'s comic play on the power of books.' },
+  ],
+};
+
+for (const [g, list] of Object.entries(englishLiteratureItemised)) {
+  if (curriculum[g]?.subjects?.['English Literature']) {
+    curriculum[g].subjects['English Literature'] = list;
+  }
+}
+
 export function getSubjectsForGrade(grade) {
   return Object.keys(curriculum[grade]?.subjects || {});
 }
