@@ -328,7 +328,7 @@ export default function Dashboard() {
             key={i}
             onClick={() => navigate(tool.to)}
             style={{
-              background: 'var(--surface)',
+              background: `linear-gradient(157deg, ${tool.bg} 0%, var(--surface) 46%)`,
               border: '1px solid var(--border)',
               borderRadius: 16, padding: 20,
               cursor: 'pointer',

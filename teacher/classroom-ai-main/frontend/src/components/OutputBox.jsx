@@ -143,6 +143,101 @@ function downloadPDF(content, toolName) {
   document.head.appendChild(script)
 }
 
+// ── ANSWER KEY SPLITTER ──────────────────────────────
+// Splits a worksheet markdown blob into the questions part and the answer-key
+// part so each can be printed separately. Detects an "Answer Key" heading line.
+export function splitAnswerKeySections(text) {
+  const lines = (text || '').split('\n')
+  let idx = -1
+  for (let i = 0; i < lines.length; i++) {
+    const bare = lines[i].trim()
+      .replace(/^#{1,4}\s*/, '')
+      .replace(/\*\*/g, '')
+      .replace(/[:*_\s]+$/, '')
+      .trim()
+    if (/^answer\s*keys?$/i.test(bare) || /^answers?$/i.test(bare)) { idx = i; break }
+  }
+  if (idx === -1) return { questions: text, answers: '', hasKey: false }
+  const questions = lines.slice(0, idx).join('\n').trim()
+  const answers   = lines.slice(idx).join('\n').trim()
+  return { questions, answers, hasKey: true }
+}
+
+// ── SPLIT DOWNLOAD MENU (Worksheet / Answer Key) ─────
+function DownloadMenu({ getText, toolName, showToast }) {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    const h = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [])
+
+  const run = (kind, fmt) => {
+    const text = getText()
+    const { questions, answers, hasKey } = splitAnswerKeySections(text)
+    let content = text, suffix = ''
+    if (kind === 'questions') { content = hasKey ? questions : text; suffix = ' - Worksheet' }
+    else if (kind === 'answers') {
+      if (!hasKey) { showToast('No answer key found in this output'); setOpen(false); return }
+      content = answers; suffix = ' - Answer Key'
+    }
+    const name = `${toolName}${suffix}`
+    setOpen(false)
+    if (fmt === 'pdf') {
+      setBusy(true); showToast('Preparing PDF...')
+      setTimeout(() => { downloadPDF(content, name); setBusy(false); showToast('Downloaded as PDF!') }, 300)
+    } else {
+      downloadTxt(content, `${name.replace(/\s+/g, '-')}.txt`); showToast('Downloaded as TXT!')
+    }
+  }
+
+  const ItemBtn = ({ icon, label, onClick, accent }) => (
+    <button onClick={onClick} className="w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors"
+      style={{ fontSize: 12.5, color: '#334155', background: 'transparent', border: 'none', cursor: 'pointer' }}
+      onMouseEnter={e => e.currentTarget.style.background = '#f1f5f9'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+      <span style={{ width: 18, textAlign: 'center', color: accent }}>{icon}</span>
+      <span style={{ fontWeight: 500 }}>{label}</span>
+    </button>
+  )
+  const GroupLabel = ({ children }) => (
+    <div style={{ padding: '8px 14px 4px', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.6px', color: '#94a3b8', textTransform: 'uppercase' }}>{children}</div>
+  )
+
+  return (
+    <div style={{ position: 'relative' }} ref={ref}>
+      <button className="btn btn-ghost" disabled={busy}
+        onClick={() => setOpen(o => !o)}
+        style={{ padding: '6px 12px', fontSize: 12, color: '#2563eb', borderColor: '#bfdbfe', background: '#eff6ff', opacity: busy ? 0.6 : 1 }}>
+        {busy
+          ? <div style={{ width: 12, height: 12, border: '2px solid #bfdbfe', borderTopColor: '#2563eb', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+          : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>}
+        Download
+        <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 60,
+          background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12,
+          width: 248, overflow: 'hidden', boxShadow: '0 12px 32px rgba(15,23,42,0.16)',
+        }}>
+          <GroupLabel>PDF — ready to print</GroupLabel>
+          <ItemBtn icon="📄" accent="#2563eb" label="Worksheet (questions only)" onClick={() => run('questions', 'pdf')} />
+          <ItemBtn icon="🔑" accent="#d97706" label="Answer Key (separate sheet)" onClick={() => run('answers', 'pdf')} />
+          <ItemBtn icon="🗂️" accent="#7c3aed" label="Full document (Q + Key)" onClick={() => run('full', 'pdf')} />
+          <div style={{ height: 1, background: '#f1f5f9', margin: '4px 0' }} />
+          <GroupLabel>Plain text (.txt)</GroupLabel>
+          <ItemBtn icon="📝" accent="#16a34a" label="Worksheet (questions only)" onClick={() => run('questions', 'txt')} />
+          <ItemBtn icon="🔑" accent="#16a34a" label="Answer Key" onClick={() => run('answers', 'txt')} />
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── MARKDOWN → HTML CONVERTER ────────────────────────
 function markdownToHtml(md) {
   const lines = md.split('\n')
@@ -228,8 +323,31 @@ function stripKeepInline(h) {
 
 // ── RICH TEXT TOOLBAR (Google Docs style) ─────────────
 export function RichTextToolbar({ editorRef, onSave, onCancel }) {
+  // Preserve the editor's text selection so toolbar clicks don't lose it.
+  // Clicking a button/select/colour-picker blurs the contentEditable; without
+  // restoring the saved range, document.execCommand applies to nothing.
+  const savedRange = useRef(null)
+  const saveSel = () => {
+    const sel = window.getSelection()
+    if (sel && sel.rangeCount > 0) {
+      const r = sel.getRangeAt(0)
+      if (editorRef.current && editorRef.current.contains(r.commonAncestorContainer)) {
+        savedRange.current = r.cloneRange()
+      }
+    }
+  }
+  const restoreSel = () => {
+    if (!editorRef.current) return
+    editorRef.current.focus()
+    if (!savedRange.current) return
+    const sel = window.getSelection()
+    sel.removeAllRanges()
+    sel.addRange(savedRange.current)
+  }
   const exec = (cmd, val = null) => {
+    restoreSel()
     document.execCommand(cmd, false, val)
+    saveSel()
     if (editorRef.current) editorRef.current.focus()
   }
 
@@ -238,7 +356,7 @@ export function RichTextToolbar({ editorRef, onSave, onCancel }) {
   const DIV = { width: 1, height: 20, background: '#e2e8f0', margin: '0 3px', flexShrink: 0 }
 
   return (
-    <div style={{
+    <div onMouseDown={saveSel} style={{
       display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 2,
       padding: '6px 12px', borderBottom: '1.5px solid #e5e7eb',
       background: '#f8fafc', userSelect: 'none',
@@ -469,6 +587,31 @@ function RenderedOutput({ text }) {
         if (b.type === 'hr') return <div key={i} style={{ height: 1, background: 'linear-gradient(90deg, #e5e7eb 0%, #bfdbfe 50%, #e5e7eb 100%)', margin: '16px 0' }} />
         if (b.type === 'heading') {
           const isH1 = b.level === 1, isH2 = b.level === 2
+          const isAnswerKey = /^answer\s*keys?\b/i.test(b.text.replace(/\*\*/g, '').trim())
+          if (isAnswerKey) {
+            return (
+              <div key={i} style={{
+                marginTop: 28, marginBottom: 14, padding: '12px 16px',
+                display: 'flex', alignItems: 'center', gap: 10,
+                background: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+                border: '1.5px solid #fcd34d', borderRadius: 12,
+                boxShadow: '0 2px 8px rgba(217,119,6,0.08)',
+              }}>
+                <span style={{
+                  width: 30, height: 30, borderRadius: 9, flexShrink: 0,
+                  background: '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
+                }}>🔑</span>
+                <span style={{ fontWeight: 800, fontSize: '1.02rem', color: '#92400e', letterSpacing: '-0.2px' }}>
+                  <InlineLine text={b.text} color="#92400e" />
+                </span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: '0.66rem', fontWeight: 700, color: '#b45309',
+                  background: '#fffbeb', border: '1px solid #fde68a', padding: '3px 9px', borderRadius: 100,
+                  textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap',
+                }}>Download separately</span>
+              </div>
+            )
+          }
           return (
             <div key={i} style={{
               fontWeight: 800, fontSize: isH1 ? '1.25rem' : isH2 ? '1.08rem' : b.level === 3 ? '0.96rem' : '0.9rem',
@@ -525,7 +668,7 @@ function RenderedOutput({ text }) {
 }
 
 // ── MAIN COMPONENT ────────────────────────────────────
-export default function OutputBox({ result, loading, toolName = 'output', icon, onClear, onEdit }) {
+export default function OutputBox({ result, loading, toolName = 'output', icon, onClear, onEdit, splitAnswerKey = false }) {
   const [toastState, setToastState] = useState({ msg: '', show: false })
   const [pdfLoading, setPdfLoading] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -629,17 +772,23 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
                   <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   Copy
                 </button>
-                <button className="btn btn-ghost" onClick={handleDownloadTxt} style={{ padding: '6px 12px', fontSize: 12, color: '#16a34a', borderColor: '#bbf7d0' }}>
-                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  TXT
-                </button>
-                <button className="btn btn-ghost" onClick={handleDownloadPDF} disabled={pdfLoading} style={{ padding: '6px 12px', fontSize: 12, color: '#dc2626', borderColor: '#fecaca', opacity: pdfLoading ? 0.6 : 1 }}>
-                  {pdfLoading
-                    ? <div style={{ width: 12, height: 12, border: '2px solid #fecaca', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  }
-                  PDF
-                </button>
+                {splitAnswerKey ? (
+                  <DownloadMenu getText={() => result} toolName={toolName} showToast={showToast} />
+                ) : (
+                  <>
+                    <button className="btn btn-ghost" onClick={handleDownloadTxt} style={{ padding: '6px 12px', fontSize: 12, color: '#16a34a', borderColor: '#bbf7d0' }}>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      TXT
+                    </button>
+                    <button className="btn btn-ghost" onClick={handleDownloadPDF} disabled={pdfLoading} style={{ padding: '6px 12px', fontSize: 12, color: '#dc2626', borderColor: '#fecaca', opacity: pdfLoading ? 0.6 : 1 }}>
+                      {pdfLoading
+                        ? <div style={{ width: 12, height: 12, border: '2px solid #fecaca', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      }
+                      PDF
+                    </button>
+                  </>
+                )}
                 <button className="btn btn-ghost" onClick={onClear} style={{ padding: '6px 12px', fontSize: 12, color: '#ef4444', borderColor: '#fecaca' }}>
                   <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                   Clear
@@ -654,17 +803,23 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
                   <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                   Copy
                 </button>
-                <button className="btn btn-ghost" onClick={handleDownloadTxt} style={{ padding: '6px 12px', fontSize: 12, color: '#16a34a', borderColor: '#bbf7d0' }}>
-                  <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  TXT
-                </button>
-                <button className="btn btn-ghost" onClick={handleDownloadPDF} disabled={pdfLoading} style={{ padding: '6px 12px', fontSize: 12, color: '#dc2626', borderColor: '#fecaca', opacity: pdfLoading ? 0.6 : 1 }}>
-                  {pdfLoading
-                    ? <div style={{ width: 12, height: 12, border: '2px solid #fecaca', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
-                    : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                  }
-                  PDF
-                </button>
+                {splitAnswerKey ? (
+                  <DownloadMenu getText={getEditMarkdown} toolName={toolName} showToast={showToast} />
+                ) : (
+                  <>
+                    <button className="btn btn-ghost" onClick={handleDownloadTxt} style={{ padding: '6px 12px', fontSize: 12, color: '#16a34a', borderColor: '#bbf7d0' }}>
+                      <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      TXT
+                    </button>
+                    <button className="btn btn-ghost" onClick={handleDownloadPDF} disabled={pdfLoading} style={{ padding: '6px 12px', fontSize: 12, color: '#dc2626', borderColor: '#fecaca', opacity: pdfLoading ? 0.6 : 1 }}>
+                      {pdfLoading
+                        ? <div style={{ width: 12, height: 12, border: '2px solid #fecaca', borderTopColor: '#dc2626', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+                        : <svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                      }
+                      PDF
+                    </button>
+                  </>
+                )}
               </>
             )}
           </div>

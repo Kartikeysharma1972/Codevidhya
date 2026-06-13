@@ -1,5 +1,5 @@
 import React from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 const navGroups = [
   {
@@ -124,11 +124,6 @@ const navGroups = [
 ]
 
 export default function Sidebar() {
-  const navigate = useNavigate()
-  const goToPricing = () => {
-    navigate('/landing')
-    setTimeout(() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }), 100)
-  }
   return (
     <aside style={{
       position: 'fixed', top: 0, left: 0,
@@ -253,52 +248,6 @@ export default function Sidebar() {
           </div>
         ))}
       </nav>
-
-      {/* Pro upgrade card */}
-      <div style={{ padding: '0 12px 12px' }}>
-        <div style={{
-          background: 'linear-gradient(135deg, #1e1b4b 0%, #4f46e5 100%)',
-          borderRadius: 14,
-          padding: '14px 14px 16px',
-          color: '#fff',
-          position: 'relative',
-          overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: -20, right: -20,
-            width: 80, height: 80, borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%)',
-          }} />
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 5,
-            padding: '2px 8px', borderRadius: 100,
-            background: 'rgba(255,255,255,0.18)',
-            fontSize: 9.5, fontWeight: 800, letterSpacing: '0.5px',
-            marginBottom: 8, position: 'relative',
-          }}>
-            <span>★</span> UPGRADE
-          </div>
-          <div style={{
-            fontSize: 13, fontWeight: 700, marginBottom: 4,
-            letterSpacing: '-0.2px', position: 'relative',
-          }}>Go Pro — ₹299/mo</div>
-          <div style={{
-            fontSize: 11, opacity: 0.75, lineHeight: 1.5,
-            marginBottom: 10, position: 'relative',
-          }}>Unlimited AI generations + all 8 tools</div>
-          <button style={{
-            width: '100%', padding: '7px', borderRadius: 8,
-            border: 'none', background: '#fff', color: '#4f46e5',
-            fontSize: 11.5, fontWeight: 800, cursor: 'pointer',
-            letterSpacing: '-0.1px', position: 'relative',
-            transition: 'transform 0.15s',
-          }}
-          onClick={goToPricing}
-          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-          >Upgrade Now</button>
-        </div>
-      </div>
 
       {/* Footer */}
       <div style={{

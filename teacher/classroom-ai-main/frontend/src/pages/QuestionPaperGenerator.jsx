@@ -98,7 +98,10 @@ const Label = ({ children }) => (
 )
 
 /* ─── PDF Generation ───────────────────────────────── */
-function downloadPaperPDF(data, grade, subject, difficulty, logoDataUrl) {
+// mode: 'full' (question paper + answer key) | 'questions' (paper only) | 'answers' (answer key only)
+function downloadPaperPDF(data, grade, subject, difficulty, logoDataUrl, mode = 'full') {
+  const showQuestions = mode === 'full' || mode === 'questions'
+  const showAnswers   = mode === 'full' || mode === 'answers'
   const loadScript = (src) => new Promise((resolve) => {
     if (document.querySelector(`script[src*="${src.split('/').pop()}"]`)) { resolve(); return }
     const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s)
@@ -127,70 +130,79 @@ function downloadPaperPDF(data, grade, subject, difficulty, logoDataUrl) {
       y += 22
     }
     doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(11, 27, 45)
-    const title = doc.splitTextToSize(data.title || 'Question Paper', maxW)
+    const titleSuffix = mode === 'questions' ? '  (Question Paper)' : mode === 'answers' ? '  (Answer Key)' : ''
+    const title = doc.splitTextToSize((data.title || 'Question Paper') + titleSuffix, maxW)
     doc.text(title, pw / 2, y, { align: 'center' }); y += title.length * 7 + 2
 
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(80, 80, 80)
     doc.text(`Grade: ${grade}  |  Subject: ${subject}  |  Difficulty: ${difficulty}`, pw / 2, y, { align: 'center' }); y += 6
-    const totalMarks = (data.questions || []).reduce((s, q) => s + (q.marks || 1), 0)
-    doc.text(`Total Marks: ${totalMarks}  |  Time: ${data.duration || 'As instructed'}`, pw / 2, y, { align: 'center' }); y += 4
+    if (showQuestions) {
+      const totalMarks = (data.questions || []).reduce((s, q) => s + (q.marks || 1), 0)
+      doc.text(`Total Marks: ${totalMarks}  |  Time: ${data.duration || 'As instructed'}`, pw / 2, y, { align: 'center' }); y += 4
+    }
     doc.setDrawColor(180); doc.setLineWidth(0.5); doc.line(m, y, pw - m, y); y += 5
 
-    // Instructions
-    const instructions = data.instructions || ['Read all questions carefully.', 'Write neat and legible answers.', 'Marks are indicated on the right.']
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40)
-    doc.text('General Instructions:', m, y); y += 5
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5)
-    instructions.forEach(inst => { const l = doc.splitTextToSize(`• ${inst}`, maxW); checkPage(l.length * 4.5); doc.text(l, m + 2, y); y += l.length * 4.5 })
-    y += 5
+    if (showQuestions) {
+      // Instructions
+      const instructions = data.instructions || ['Read all questions carefully.', 'Write neat and legible answers.', 'Marks are indicated on the right.']
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40)
+      doc.text('General Instructions:', m, y); y += 5
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5)
+      instructions.forEach(inst => { const l = doc.splitTextToSize(`• ${inst}`, maxW); checkPage(l.length * 4.5); doc.text(l, m + 2, y); y += l.length * 4.5 })
+      y += 5
 
-    // Questions
-    let curSection = ''
-    ;(data.questions || []).forEach((q, i) => {
-      if (q.section && q.section !== curSection) {
-        curSection = q.section; checkPage(12)
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(57, 154, 255)
-        doc.text(q.section, m, y); y += 7
-      }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(11, 27, 45)
-      const qW = doc.splitTextToSize(q.question, maxW - 22); checkPage(qW.length * 5.5 + 6)
-      doc.text(`Q${i + 1}.`, m, y)
-      if (q.marks) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 120); doc.text(`[${q.marks}]`, pw - m, y, { align: 'right' }) }
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-      doc.text(qW, m + 10, y); y += qW.length * 5.5 + 2
+      // Questions
+      let curSection = ''
+      ;(data.questions || []).forEach((q, i) => {
+        if (q.section && q.section !== curSection) {
+          curSection = q.section; checkPage(12)
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(57, 154, 255)
+          doc.text(q.section, m, y); y += 7
+        }
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(11, 27, 45)
+        const qW = doc.splitTextToSize(q.question, maxW - 22); checkPage(qW.length * 5.5 + 6)
+        doc.text(`Q${i + 1}.`, m, y)
+        if (q.marks) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 120); doc.text(`[${q.marks}]`, pw - m, y, { align: 'right' }) }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
+        doc.text(qW, m + 10, y); y += qW.length * 5.5 + 2
 
-      if (q.type === 'mcq' && q.options) {
-        q.options.forEach((opt, j) => {
-          const letter = ['A','B','C','D'][j]
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(61, 85, 110)
-          const oW = doc.splitTextToSize(`(${letter}) ${opt.replace(/^[A-D]\)\s*/i, '')}`, maxW - 18)
-          checkPage(oW.length * 5 + 1); doc.text(oW, m + 14, y); y += oW.length * 5 + 1
-        }); y += 2
-      }
-      if (q.type === 'subjective') {
-        const lines = (q.marks || 1) <= 2 ? 3 : (q.marks || 1) <= 4 ? 5 : 8
-        doc.setDrawColor(200); doc.setLineWidth(0.3)
-        for (let l = 0; l < lines; l++) { checkPage(7); doc.line(m + 10, y + 2, pw - m, y + 2); y += 7 }
-        y += 2
-      }
-      y += 3
-    })
+        if (q.type === 'mcq' && q.options) {
+          q.options.forEach((opt, j) => {
+            const letter = ['A','B','C','D'][j]
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(61, 85, 110)
+            const oW = doc.splitTextToSize(`(${letter}) ${opt.replace(/^[A-D]\)\s*/i, '')}`, maxW - 18)
+            checkPage(oW.length * 5 + 1); doc.text(oW, m + 14, y); y += oW.length * 5 + 1
+          }); y += 2
+        }
+        if (q.type === 'subjective') {
+          const lines = (q.marks || 1) <= 2 ? 3 : (q.marks || 1) <= 4 ? 5 : 8
+          doc.setDrawColor(200); doc.setLineWidth(0.3)
+          for (let l = 0; l < lines; l++) { checkPage(7); doc.line(m + 10, y + 2, pw - m, y + 2); y += 7 }
+          y += 2
+        }
+        y += 3
+      })
+    }
 
-    // Answer key page
-    addWatermark(); doc.addPage(); y = m
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(11, 27, 45)
-    doc.text('ANSWER KEY', pw / 2, y, { align: 'center' }); y += 10
-    ;(data.questions || []).forEach((q, i) => {
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 30); checkPage(12)
-      doc.text(`Q${i + 1}. ${q.type === 'mcq' ? q.correct : '(Subjective)'}`, m, y); y += 4
-      if (q.explanation) {
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(80, 80, 80)
-        const eL = doc.splitTextToSize(q.explanation, maxW - 10); checkPage(eL.length * 4.5)
-        doc.text(eL, m + 6, y); y += eL.length * 4.5 + 4
-      }
-    })
+    if (showAnswers) {
+      // Answer key — on its own page when the question paper precedes it.
+      if (showQuestions) { addWatermark(); doc.addPage(); y = m }
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(11, 27, 45)
+      doc.text('ANSWER KEY', pw / 2, y, { align: 'center' }); y += 10
+      ;(data.questions || []).forEach((q, i) => {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 30); checkPage(12)
+        doc.text(`Q${i + 1}. ${q.type === 'mcq' ? q.correct : '(Subjective)'}`, m, y); y += 4
+        if (q.explanation) {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(80, 80, 80)
+          const eL = doc.splitTextToSize(q.explanation, maxW - 10); checkPage(eL.length * 4.5)
+          doc.text(eL, m + 6, y); y += eL.length * 4.5 + 4
+        }
+      })
+    }
+
     addWatermark()
-    doc.save(`${(data.title || 'Question-Paper').replace(/\s+/g, '-')}.pdf`)
+    const fileSuffix = mode === 'questions' ? '-Questions' : mode === 'answers' ? '-Answer-Key' : ''
+    doc.save(`${(data.title || 'Question-Paper').replace(/\s+/g, '-')}${fileSuffix}.pdf`)
   })
 }
 
@@ -216,6 +228,8 @@ export default function QuestionPaperGenerator() {
   const [error, setError]       = useState('')
   const [showHistory, setShowHistory] = useState(false)
   const [pdfLoading, setPdfLoading] = useState(false)
+  const [dlOpen, setDlOpen]     = useState(false)
+  const dlRef                   = useRef(null)
   const usageCounterRef         = useRef(null)
   const [paper, setPaper]       = useState(null)
   const [mode, setMode]         = useState('setup') // setup | paper
@@ -312,10 +326,18 @@ export default function QuestionPaperGenerator() {
     setPaper(updated)
   }
 
-  const handleDownloadPDF = () => {
-    if (!paper) return; setPdfLoading(true)
-    setTimeout(() => { downloadPaperPDF(paper, grade, subject, difficulty, schoolLogo); setPdfLoading(false) }, 300)
+  const handleDownloadPDF = (downloadMode = 'full') => {
+    if (!paper) return
+    setDlOpen(false); setPdfLoading(true)
+    setTimeout(() => { downloadPaperPDF(paper, grade, subject, difficulty, schoolLogo, downloadMode); setPdfLoading(false) }, 300)
   }
+
+  useEffect(() => {
+    if (!dlOpen) return
+    const h = (e) => { if (dlRef.current && !dlRef.current.contains(e.target)) setDlOpen(false) }
+    document.addEventListener('mousedown', h)
+    return () => document.removeEventListener('mousedown', h)
+  }, [dlOpen])
 
 
   /* ═══ SETUP SCREEN ═══ */
@@ -471,10 +493,38 @@ export default function QuestionPaperGenerator() {
               {qpEditing ? 'Done Editing' : 'Edit'}
             </button>
 
-            <button onClick={handleDownloadPDF} disabled={pdfLoading}
-              style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #fecaca', background: 'transparent', color: '#dc2626', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
-              {pdfLoading ? 'Preparing...' : 'Download PDF'}
-            </button>
+            <div style={{ position: 'relative' }} ref={dlRef}>
+              <button onClick={() => setDlOpen(o => !o)} disabled={pdfLoading}
+                style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid #fecaca', background: dlOpen ? '#fef2f2' : 'transparent', color: '#dc2626', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {pdfLoading
+                  ? 'Preparing...'
+                  : <>
+                      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Download PDF
+                      <svg width={11} height={11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" style={{ transform: dlOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}><polyline points="6 9 12 15 18 9"/></svg>
+                    </>}
+              </button>
+              {dlOpen && !pdfLoading && (
+                <div style={{ position: 'absolute', right: 0, top: 'calc(100% + 6px)', zIndex: 60, background: '#fff', border: '1px solid #e2e8f0', borderRadius: 12, width: 264, overflow: 'hidden', boxShadow: '0 12px 32px rgba(15,23,42,0.16)' }}>
+                  {[
+                    { mode: 'questions', icon: '📄', accent: '#2563eb', label: 'Question Paper only', desc: 'For students — no answers' },
+                    { mode: 'answers',   icon: '🔑', accent: '#d97706', label: 'Answer Key only',     desc: 'Separate sheet for the teacher' },
+                    { mode: 'full',      icon: '🗂️', accent: '#7c3aed', label: 'Full (Paper + Key)',   desc: 'Everything in one PDF' },
+                  ].map(opt => (
+                    <button key={opt.mode} onClick={() => handleDownloadPDF(opt.mode)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'flex-start', gap: 11, padding: '11px 14px', background: 'transparent', border: 'none', borderBottom: '1px solid #f1f5f9', cursor: 'pointer', textAlign: 'left' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                      <span style={{ fontSize: '1.05rem', lineHeight: 1.2 }}>{opt.icon}</span>
+                      <span>
+                        <span style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: opt.accent }}>{opt.label}</span>
+                        <span style={{ display: 'block', fontSize: '0.72rem', color: '#94a3b8', marginTop: 1 }}>{opt.desc}</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button onClick={() => { setMode('setup'); setPaper(null); setQpEditing(false) }}
               style={{ padding: '8px 18px', borderRadius: 10, border: '1.5px solid var(--border)', background: 'var(--surface)', color: 'var(--text-2)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>
               New Paper

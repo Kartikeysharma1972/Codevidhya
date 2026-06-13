@@ -2688,19 +2688,134 @@
     ],
     "English Literature": [
       {
-        "chapter": "Core Chapters",
-        "topic": "Selected Prose Text (Chapters 1 to 11)",
-        "description": "Extracting core themes from texts like The Fun They Had, My Childhood, A Truly Beautiful Mind, Kathmandu, and If I Were You; character sketching, and vocabulary expansion."
+        "chapter": "Prose 1",
+        "topic": "The Fun They Had",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Fun They Had'."
       },
       {
-        "chapter": "Core Poems",
-        "topic": "Selected Poems (Poems 1 to 8)",
-        "description": "Literary devices, rhyme schemes, and central ideas of poems including The Road Not Taken, Wind, Rain on the Roof, No Men Are Foreign, and On Killing a Tree."
+        "chapter": "Prose 2",
+        "topic": "The Sound of Music",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Sound of Music'."
       },
       {
-        "chapter": "Supplementary",
-        "topic": "Core Supplementary Stories",
-        "description": "Analytical reading of supplementary fiction like The Lost Child, The Adventures of Toto, The Happy Prince, The Last Leaf, and The Beggar; evaluating narrative styles and underlying morals."
+        "chapter": "Prose 3",
+        "topic": "The Little Girl",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Little Girl'."
+      },
+      {
+        "chapter": "Prose 4",
+        "topic": "A Truly Beautiful Mind",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'A Truly Beautiful Mind'."
+      },
+      {
+        "chapter": "Prose 5",
+        "topic": "The Snake and the Mirror",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Snake and the Mirror'."
+      },
+      {
+        "chapter": "Prose 6",
+        "topic": "My Childhood",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'My Childhood'."
+      },
+      {
+        "chapter": "Prose 7",
+        "topic": "Reach for the Top",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Reach for the Top'."
+      },
+      {
+        "chapter": "Prose 8",
+        "topic": "Kathmandu",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Kathmandu'."
+      },
+      {
+        "chapter": "Prose 9",
+        "topic": "If I Were You",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'If I Were You'."
+      },
+      {
+        "chapter": "Poem 1",
+        "topic": "The Road Not Taken",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'The Road Not Taken'."
+      },
+      {
+        "chapter": "Poem 2",
+        "topic": "Wind",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Wind'."
+      },
+      {
+        "chapter": "Poem 3",
+        "topic": "Rain on the Roof",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Rain on the Roof'."
+      },
+      {
+        "chapter": "Poem 4",
+        "topic": "The Lake Isle of Innisfree",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'The Lake Isle of Innisfree'."
+      },
+      {
+        "chapter": "Poem 5",
+        "topic": "A Legend of the Northland",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'A Legend of the Northland'."
+      },
+      {
+        "chapter": "Poem 6",
+        "topic": "No Men Are Foreign",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'No Men Are Foreign'."
+      },
+      {
+        "chapter": "Poem 7",
+        "topic": "On Killing a Tree",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'On Killing a Tree'."
+      },
+      {
+        "chapter": "Poem 8",
+        "topic": "A Slumber Did My Spirit Seal",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'A Slumber Did My Spirit Seal'."
+      },
+      {
+        "chapter": "Supplementary 1",
+        "topic": "The Lost Child",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Lost Child'."
+      },
+      {
+        "chapter": "Supplementary 2",
+        "topic": "The Adventures of Toto",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Adventures of Toto'."
+      },
+      {
+        "chapter": "Supplementary 3",
+        "topic": "Iswaran the Storyteller",
+        "description": "Analytical reading and moral exploration of the supplementary story 'Iswaran the Storyteller'."
+      },
+      {
+        "chapter": "Supplementary 4",
+        "topic": "In the Kingdom of Fools",
+        "description": "Analytical reading and moral exploration of the supplementary story 'In the Kingdom of Fools'."
+      },
+      {
+        "chapter": "Supplementary 5",
+        "topic": "The Happy Prince",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Happy Prince'."
+      },
+      {
+        "chapter": "Supplementary 6",
+        "topic": "Weathering the Storm in Ersama",
+        "description": "Analytical reading and moral exploration of the supplementary story 'Weathering the Storm in Ersama'."
+      },
+      {
+        "chapter": "Supplementary 7",
+        "topic": "The Last Leaf",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Last Leaf'."
+      },
+      {
+        "chapter": "Supplementary 8",
+        "topic": "A House Is Not a Home",
+        "description": "Analytical reading and moral exploration of the supplementary story 'A House Is Not a Home'."
+      },
+      {
+        "chapter": "Supplementary 9",
+        "topic": "The Beggar",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Beggar'."
       }
     ],
     "Hindi Literature": [
@@ -3060,19 +3175,144 @@
     ],
     "English Literature": [
       {
-        "chapter": "Core Text",
-        "topic": "Selected Chapters (Chapters 1 to 9)",
-        "description": "Comprehensive text reading: A Letter to God, Nelson Mandela, Two Stories about Flying, Diary of Anne Frank, Glimpses of India, Mijbil the Otter, Madam Rides the Bus, Sermon at Benares, The Proposal."
+        "chapter": "Prose 1",
+        "topic": "A Letter to God",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'A Letter to God'."
       },
       {
-        "chapter": "Core Poems",
-        "topic": "Selected Poems (Poems 1 to 10)",
-        "description": "Structural and thematic analysis of poems: Dust of Snow, Fire and Ice, Tiger in the Zoo, How to Tell Wild Animals, The Ball Poem, Amanda!, Custard the Dragon, For Anne Gregory."
+        "chapter": "Prose 2",
+        "topic": "Nelson Mandela: Long Walk to Freedom",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Nelson Mandela: Long Walk to Freedom'."
       },
       {
-        "chapter": "Supplementary",
-        "topic": "Core Supplementary Stories",
-        "description": "Evaluating narrative styles: A Triumph of Surgery, The Thief's Story, The Midnight Visitor, A Question of Trust, Footprints without Feet, Making of a Scientist, The Necklace, Bholi, The Book That Saved the Earth."
+        "chapter": "Prose 3",
+        "topic": "Two Stories about Flying",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Two Stories about Flying'."
+      },
+      {
+        "chapter": "Prose 4",
+        "topic": "From the Diary of Anne Frank",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'From the Diary of Anne Frank'."
+      },
+      {
+        "chapter": "Prose 5",
+        "topic": "Glimpses of India",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Glimpses of India'."
+      },
+      {
+        "chapter": "Prose 6",
+        "topic": "Mijbil the Otter",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Mijbil the Otter'."
+      },
+      {
+        "chapter": "Prose 7",
+        "topic": "Madam Rides the Bus",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'Madam Rides the Bus'."
+      },
+      {
+        "chapter": "Prose 8",
+        "topic": "The Sermon at Benares",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Sermon at Benares'."
+      },
+      {
+        "chapter": "Prose 9",
+        "topic": "The Proposal",
+        "description": "Reading comprehension, theme and character analysis of the prose lesson 'The Proposal'."
+      },
+      {
+        "chapter": "Poem 1",
+        "topic": "Dust of Snow",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Dust of Snow'."
+      },
+      {
+        "chapter": "Poem 2",
+        "topic": "Fire and Ice",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Fire and Ice'."
+      },
+      {
+        "chapter": "Poem 3",
+        "topic": "A Tiger in the Zoo",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'A Tiger in the Zoo'."
+      },
+      {
+        "chapter": "Poem 4",
+        "topic": "How to Tell Wild Animals",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'How to Tell Wild Animals'."
+      },
+      {
+        "chapter": "Poem 5",
+        "topic": "The Ball Poem",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'The Ball Poem'."
+      },
+      {
+        "chapter": "Poem 6",
+        "topic": "Amanda!",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Amanda!'."
+      },
+      {
+        "chapter": "Poem 7",
+        "topic": "The Trees",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'The Trees'."
+      },
+      {
+        "chapter": "Poem 8",
+        "topic": "Fog",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'Fog'."
+      },
+      {
+        "chapter": "Poem 9",
+        "topic": "The Tale of Custard the Dragon",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'The Tale of Custard the Dragon'."
+      },
+      {
+        "chapter": "Poem 10",
+        "topic": "For Anne Gregory",
+        "description": "Literary devices, rhyme scheme and central idea of the poem 'For Anne Gregory'."
+      },
+      {
+        "chapter": "Supplementary 1",
+        "topic": "A Triumph of Surgery",
+        "description": "Analytical reading and moral exploration of the supplementary story 'A Triumph of Surgery'."
+      },
+      {
+        "chapter": "Supplementary 2",
+        "topic": "The Thief's Story",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Thief's Story'."
+      },
+      {
+        "chapter": "Supplementary 3",
+        "topic": "The Midnight Visitor",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Midnight Visitor'."
+      },
+      {
+        "chapter": "Supplementary 4",
+        "topic": "A Question of Trust",
+        "description": "Analytical reading and moral exploration of the supplementary story 'A Question of Trust'."
+      },
+      {
+        "chapter": "Supplementary 5",
+        "topic": "Footprints without Feet",
+        "description": "Analytical reading and moral exploration of the supplementary story 'Footprints without Feet'."
+      },
+      {
+        "chapter": "Supplementary 6",
+        "topic": "The Making of a Scientist",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Making of a Scientist'."
+      },
+      {
+        "chapter": "Supplementary 7",
+        "topic": "The Necklace",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Necklace'."
+      },
+      {
+        "chapter": "Supplementary 8",
+        "topic": "Bholi",
+        "description": "Analytical reading and moral exploration of the supplementary story 'Bholi'."
+      },
+      {
+        "chapter": "Supplementary 9",
+        "topic": "The Book That Saved the Earth",
+        "description": "Analytical reading and moral exploration of the supplementary story 'The Book That Saved the Earth'."
       }
     ],
     "Hindi Literature": [

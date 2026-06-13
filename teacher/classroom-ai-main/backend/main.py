@@ -630,9 +630,13 @@ def generate_worksheet(req: WorksheetRequest):
         "- For fill-in-blank: use ________ for blanks\n"
         "- For open-ended: include point values and expected answer length\n\n"
         "## Answer Key\n"
-        "- Each answer numbered to match\n"
-        "- Include full solution steps for calculation questions\n"
-        "- Include 1-2 sentence explanation for each answer\n\n"
+        "- Begin this section with a heading written EXACTLY as '## Answer Key' (it is printed on a separate sheet)\n"
+        "- Provide an answer for EVERY question, numbered identically to the questions above (1, 2, 3, ...)\n"
+        "- Each answer MUST correctly solve ITS OWN matching question number — never mismatch or skip numbers\n"
+        f"- Every answer must be correct AND solved using methods/vocabulary appropriate for a {req.grade_level} student "
+        f"— do NOT use techniques, formulae, or depth from a higher grade than {req.grade_level}\n"
+        "- Include full step-by-step working for calculation questions\n"
+        "- Include a 1-2 sentence explanation for each answer\n\n"
         "Use proper markdown formatting: # for title, ## for sections, **bold** for key terms, numbered lists for questions, - for bullets."
     )
 
