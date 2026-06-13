@@ -188,7 +188,9 @@ export default function ProjectGenerator() {
                   <FiRefreshCw className={loading ? 'animate-spin' : ''} size={12} /> Regenerate
                 </button>
               </div>
-              <ChatMarkdown content={result} />
+              <div className="project-md">
+                <ChatMarkdown content={result} />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

@@ -546,35 +546,40 @@ ${avoidIdeasBlock}
 Generate EXACTLY ${count} project ideas — each one DISTINCT in approach (not minor variations of each other), and each one FRESH and original (no recycled, textbook-cliché projects).
 Mix difficulty levels: include at least one Easy, one Medium, and one Hard option across the ${count}.
 
-Format EACH idea EXACTLY like this premium layout (use markdown, keep the spacing):
+FORMATTING RULES (follow EXACTLY — keep it clean and professional):
+- Do NOT use ANY emojis or icons anywhere in the output.
+- Start EACH idea with a level-2 heading for the title: "## Idea N: <Clear, specific project title>".
+- Put each section label in **bold** on its own line, then the content below it.
+- Separate every idea from the next with a horizontal rule ("---") on its own line, so there is clear spacing between ideas.
 
----
+Use EXACTLY this structure for EACH idea:
 
-## 💡 Idea N — <Creative, specific, catchy title>
+## Idea N: <Clear, specific project title>
 
-> <one punchy line on why this project is genuinely exciting>
+<one-line summary of what this project is>
 
-**🎯 What you'll build**
+**Overview**
 2-3 sentence overview of the project and its learning goal.
 
-**🧰 Materials / Tools**
+**Materials / Tools**
 - <item 1>
 - <item 2>
 - <item 3>
 
-**🛠️ Step-by-step**
+**Steps**
 1. <step 1>
 2. <step 2>
 3. <step 3>
 4. <step 4>
 
-**📊 At a glance**
+**At a Glance**
 
-| 🔥 Effort | ⏱️ Time | 🧠 Skills built | 📘 CBSE link |
+| Effort | Time | Skills Built | CBSE Link |
 |---|---|---|---|
 | Easy / Medium / Hard | e.g. "1 weekend" | <skills> | <chapter/topic> |
 
-**🌟 Wow factor:** <1 sentence on what makes this stand out>
+**Why It Stands Out**
+<1 sentence on what makes this idea genuinely interesting>
 
 ---
 
@@ -585,7 +590,7 @@ GUIDELINES:
 - Each idea should feel different — vary the project TYPE (model, presentation, experiment, app, poster, research) if "Any" was selected.
 - If "${extra.projectType || 'Any'}" is a specific type, all ${count} ideas should fit that type but explore different angles within it.
 - Be CONCRETE — name specific materials and specific steps. No vague hand-waving.
-- Use clean markdown with proper spacing so the output looks polished.
+- Keep the writing crisp and professional. No emojis.
 `;
   }
 

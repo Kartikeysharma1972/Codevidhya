@@ -270,3 +270,56 @@ body {
 .chat-markdown blockquote {
   @apply border-l-4 border-primary-300 pl-3 italic text-gray-600 mb-2;
 }
+
+/* Project Ideas Generator — clean, professional, emoji-free layout.
+   Placed after .chat-markdown so these win at equal specificity:
+   bold + underlined idea titles, clear gaps between ideas, tidy tables. */
+.project-md .chat-markdown > *:first-child { margin-top: 0; }
+.project-md .chat-markdown h2 {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: #0F172A;
+  letter-spacing: -0.01em;
+  border-bottom: 2px solid #E2E8F0;
+  padding-bottom: 0.4rem;
+  margin: 1.9rem 0 0.85rem;
+}
+.project-md .chat-markdown h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin: 1.25rem 0 0.5rem;
+}
+.project-md .chat-markdown strong { color: #1E293B; font-weight: 700; }
+.project-md .chat-markdown p { margin: 0.35rem 0 0.7rem; color: #475569; line-height: 1.65; }
+.project-md .chat-markdown ul,
+.project-md .chat-markdown ol { margin: 0.25rem 0 0.9rem 1.15rem; }
+.project-md .chat-markdown li { margin-bottom: 0.3rem; color: #475569; }
+.project-md .chat-markdown hr {
+  border: none;
+  border-top: 1px solid #E5E9F0;
+  margin: 2.25rem 0;
+}
+.project-md .chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.5rem 0 1rem;
+  font-size: 12.5px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 0 0 1px #E5E9F0;
+}
+.project-md .chat-markdown th {
+  background: #F1F5F9;
+  color: #334155;
+  font-weight: 700;
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid #E5E9F0;
+}
+.project-md .chat-markdown td {
+  padding: 8px 12px;
+  border-bottom: 1px solid #EEF2F7;
+  color: #475569;
+}
+.project-md .chat-markdown tr:last-child td { border-bottom: none; }
