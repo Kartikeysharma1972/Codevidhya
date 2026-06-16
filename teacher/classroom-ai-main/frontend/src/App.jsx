@@ -3,8 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
-import LandingPage from './pages/LandingPage'
-import LoginPage from './pages/LoginPage'
+import PortalSessionNotice from './pages/PortalSessionNotice'
 import Dashboard from './pages/Dashboard'
 import WorksheetGenerator from './pages/WorksheetGenerator'
 import LessonPlanGenerator from './pages/LessonPlanGenerator'
@@ -37,7 +36,8 @@ function ProtectedLayout() {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />
+    // No sub-app login any more — auth comes from the Codevidhya portal handoff.
+    return <PortalSessionNotice app="Classroom AI" />
   }
 
   return (
@@ -57,10 +57,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/landing" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-
         <Route element={<ProtectedLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/worksheet" element={<WorksheetGenerator />} />
@@ -75,7 +71,7 @@ export default function App() {
           <Route path="/comprehension" element={<ReadingComprehension />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/dashboard" />} />
       </Routes>
     </BrowserRouter>
   )

@@ -2,7 +2,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import { AnimatePresence } from 'framer-motion';
 
-import Login from './pages/Login';
+import PortalSessionNotice from './components/PortalSessionNotice';
 import Dashboard from './pages/Dashboard';
 import Alerts from './pages/Alerts';
 import Teachers from './pages/Teachers';
@@ -30,7 +30,8 @@ function ProtectedRoute({ children }) {
   }
 
   if (!admin) {
-    return <Navigate to="/login" replace />;
+    // No sub-app login any more — auth comes from the Codevidhya portal handoff.
+    return <PortalSessionNotice app="School Admin" />;
   }
 
   return children;
@@ -42,7 +43,6 @@ export default function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/login" element={<Login />} />
         <Route
           path="/"
           element={

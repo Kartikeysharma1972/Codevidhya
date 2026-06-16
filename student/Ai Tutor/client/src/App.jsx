@@ -1,9 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { useAuth } from './contexts/AuthContext';
-import LandingPage from './pages/LandingPage';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
+import PortalSessionNotice from './components/PortalSessionNotice';
 import Dashboard from './pages/Dashboard';
 import ConceptExplainer from './pages/ConceptExplainer';
 import DocumentSummarizer from './pages/DocumentSummarizer';
@@ -16,7 +14,8 @@ import TestResult from './pages/TestResult';
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-400"></div></div>;
-  if (!user) return <Navigate to="/login" />;
+  // No sub-app login any more — auth comes from the Codevidhya portal handoff.
+  if (!user) return <PortalSessionNotice app="AI Tutor" />;
   return children;
 }
 
@@ -24,9 +23,6 @@ export default function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/concept-explainer" element={<ProtectedRoute><ConceptExplainer /></ProtectedRoute>} />
         <Route path="/concept-explainer/:sessionId" element={<ProtectedRoute><ConceptExplainer /></ProtectedRoute>} />
@@ -36,7 +32,7 @@ export default function App() {
         <Route path="/mock-test" element={<ProtectedRoute><MockTest /></ProtectedRoute>} />
         <Route path="/focus-area" element={<ProtectedRoute><FocusArea /></ProtectedRoute>} />
         <Route path="/test-result/:testId" element={<ProtectedRoute><TestResult /></ProtectedRoute>} />
-        <Route path="*" element={<Navigate to="/" />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </AnimatePresence>
   );
