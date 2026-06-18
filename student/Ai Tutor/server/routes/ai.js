@@ -18,6 +18,16 @@ function getGroq() {
   return groq;
 }
 
+// Non-Latin scripts (Hindi, Telugu, Tamil, etc.) tokenize into ~2-3x more tokens
+// than English, so the English-tuned max_tokens budgets truncate regional output
+// mid-answer (broken mock-test JSON, cut-off study notes). Bump the budget for
+// non-English languages, capped to stay within the model's completion limit.
+function scaleTokens(maxTokens, language) {
+  const lang = (language || 'English').trim();
+  if (!lang || lang === 'English') return maxTokens;
+  return Math.min(12000, Math.round(maxTokens * 2.2));
+}
+
 const upload = multer({
   dest: 'uploads/',
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -64,7 +74,7 @@ async function chatWithGroq(systemPrompt, messages, options = {}) {
     model: options.model || 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: formattedMessages,
     temperature: options.temperature ?? 0.7,
-    max_tokens: options.maxTokens || 4096,
+    max_tokens: scaleTokens(options.maxTokens || 4096, options.language),
     ...(options.jsonMode ? { response_format: { type: 'json_object' } } : {}),
   });
 
@@ -72,7 +82,7 @@ async function chatWithGroq(systemPrompt, messages, options = {}) {
 }
 
 
-async function chatWithGroqVision(systemPrompt, textContent, imageBase64, mimeType) {
+async function chatWithGroqVision(systemPrompt, textContent, imageBase64, mimeType, language) {
   const response = await getGroq().chat.completions.create({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
@@ -86,7 +96,7 @@ async function chatWithGroqVision(systemPrompt, textContent, imageBase64, mimeTy
       },
     ],
     temperature: 0.7,
-    max_tokens: 4096,
+    max_tokens: scaleTokens(4096, language),
   });
 
   return response.choices[0]?.message?.content || '';
@@ -120,7 +130,7 @@ router.post('/concept-explainer', authMiddleware, async (req, res) => {
 
     session.messages.push({ role: 'user', content: message });
 
-    const aiResponse = await chatWithGroq(systemPrompt, session.messages);
+    const aiResponse = await chatWithGroq(systemPrompt, session.messages, { language: user.language });
 
     session.messages.push({ role: 'assistant', content: aiResponse });
     await session.save();
@@ -152,7 +162,8 @@ router.post('/concept-explainer/image', authMiddleware, upload.single('image'), 
       systemPrompt,
       message || 'Explain what is shown in this image.',
       imageBase64,
-      mimeType
+      mimeType,
+      user.language
     );
 
     fs.unlinkSync(req.file.path);
@@ -236,7 +247,7 @@ router.post('/concept-explainer/file', authMiddleware, upload.single('file'), as
     session.messages.push({ role: 'user', content: `[File: ${req.file.originalname}] ${message || ''}` });
 
     const allMessages = [...session.messages.slice(0, -1), { role: 'user', content: userContent }];
-    const aiResponse = await chatWithGroq(systemPrompt, allMessages);
+    const aiResponse = await chatWithGroq(systemPrompt, allMessages, { language: user.language });
 
     session.messages.push({ role: 'assistant', content: aiResponse });
     await session.save();
@@ -275,7 +286,8 @@ router.post('/summarize', authMiddleware, upload.single('file'), async (req, res
           systemPrompt,
           `${mode === 'search' ? `Find and answer: ${query}` : `Provide a ${mode || 'full'} summary of this document/page.`}`,
           imageBase64,
-          req.file.mimetype
+          req.file.mimetype,
+          user.language
         );
         fs.unlinkSync(req.file.path);
 
@@ -310,7 +322,7 @@ router.post('/summarize', authMiddleware, upload.single('file'), async (req, res
 
     const aiResponse = await chatWithGroq(systemPrompt, [
       { role: 'user', content: `Document content:\n\n${content.substring(0, 15000)}\n\n${mode === 'search' ? `Question: ${query}` : `Provide a ${mode || 'full'} summary.`}` },
-    ]);
+    ], { language: user.language });
 
     let session;
     if (sessionId) {
@@ -379,7 +391,7 @@ router.post('/project-ideas', authMiddleware, async (req, res) => {
 
     const aiResponse = await chatWithGroq(systemPrompt, [
       { role: 'user', content: `Generate project ideas for ${subject}${topic ? ` on topic: ${topic}` : ''}, project type: ${projectType || 'any'}. Make them brand new — different from anything suggested before.` },
-    ], { temperature: 0.9, maxTokens: 5000 });
+    ], { temperature: 0.9, maxTokens: 5000, language: user.language });
 
     let session;
     if (sessionId) {
@@ -481,7 +493,7 @@ router.post('/mock-test/generate', authMiddleware, async (req, res) => {
 
       const aiResponse = await chatWithGroq(systemPrompt, [
         { role: 'user', content: `Generate a mock test for ${subject}, chapters: ${chapters?.join(', ') || 'All chapters'}. ${typeInstruction} Every question must be NEW (not in the do-not-repeat list). Return ONLY valid JSON: {"questions": [...]}` },
-      ], { jsonMode: true, temperature: 0.45 + (attempt * 0.15), maxTokens: 8000 });
+      ], { jsonMode: true, temperature: 0.45 + (attempt * 0.15), maxTokens: 8000, language: user.language });
 
       try {
         const parsed = JSON.parse(aiResponse);
@@ -643,7 +655,7 @@ router.post('/focus-area', authMiddleware, async (req, res) => {
 
     const aiResponse = await chatWithGroq(systemPrompt, [
       { role: 'user', content: userMessage },
-    ], { maxTokens: 8000 });
+    ], { maxTokens: 8000, language: user.language });
 
     const title = cleanTopic ? `Focus: ${cleanTopic}` : `Focus: ${chapter}`;
     const userMsgRecord = cleanTopic

@@ -420,6 +420,31 @@ def get_language_directive(language: str) -> str:
     )
 
 
+def scale_tokens_for_language(max_tok: int, language: str, cap: int = 12000) -> int:
+    """Non-Latin scripts (Hindi, Telugu, Tamil, etc.) tokenize into ~2-3x more
+    tokens than English for the same content. The per-tool max_tokens budgets are
+    tuned for English, so regional output gets silently truncated mid-paper —
+    producing incomplete / garbled results. Bump the budget for non-English
+    languages (capped so we stay within the model's completion limit)."""
+    lang = (language or "English").strip()
+    if not lang or lang == "English":
+        return max_tok
+    return min(cap, int(max_tok * 2.2))
+
+
+def _friendly_ai_error(e: Exception) -> HTTPException:
+    """Turn raw provider errors into a clear message. The free Groq tier has a
+    daily token cap; when it's hit users were seeing a generic failure."""
+    msg = str(e)
+    if "rate_limit" in msg or "429" in msg or "tokens per day" in msg.lower():
+        return HTTPException(status_code=429, detail=(
+            "Daily AI usage limit reached for now. This resets within a few hours — "
+            "please try again later. (Tip: regional languages use more of the daily "
+            "quota than English.)"
+        ))
+    return HTTPException(status_code=500, detail=f"AI error: {msg}")
+
+
 def get_curriculum_guardrails(grade_level: str, subject: str = "", topic: str = "",
                               topic_description: str = "", strict_syllabus: bool = True) -> str:
     """Shared, non-negotiable rules injected into every generation prompt:
@@ -491,7 +516,7 @@ def call_openai(system_prompt: str, user_prompt: str, max_tokens: int = 4096, te
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+        raise _friendly_ai_error(e)
 
 # ─── ROUTES ───────────────────────────────────────────
 
@@ -682,6 +707,7 @@ def generate_worksheet(req: WorksheetRequest):
     # Each question + answer ~ 350-450 tokens; add 600 for title/instructions/word bank.
     qcount = max(1, int(req.num_questions or 10))
     worksheet_tokens = min(8000, max(4096, 600 + qcount * 420))
+    worksheet_tokens = scale_tokens_for_language(worksheet_tokens, req.language)
     result = call_openai(system_prompt, user_prompt, max_tokens=worksheet_tokens)
     return {"result": result, "tool": "worksheet"}
 
@@ -898,7 +924,7 @@ def generate_lesson_plan(req: LessonPlanRequest):
     )
 
     # Use higher token limit for detailed, example-rich output
-    lesson_result = call_openai(system_prompt, user_prompt, max_tokens=6000, temperature=0.4)
+    lesson_result = call_openai(system_prompt, user_prompt, max_tokens=scale_tokens_for_language(6000, req.language), temperature=0.4)
 
     # Generate topic overview only if requested (as a separate quick-reference page)
     if req.include_topic_overview:
@@ -922,7 +948,7 @@ def generate_lesson_plan(req: LessonPlanRequest):
             "Use ## for section headers, **bold** for terms, - for bullet points."
         )
 
-        topic_overview = call_openai(topic_system, topic_prompt, max_tokens=2400, temperature=0.3)
+        topic_overview = call_openai(topic_system, topic_prompt, max_tokens=scale_tokens_for_language(2400, req.language), temperature=0.3)
         result = (
             "=== TEACHER QUICK REFERENCE ===\n\n"
             + topic_overview
@@ -1012,6 +1038,7 @@ def enrich_lesson_plan(req: LessonPlanEnrichRequest):
 
     # "more_topics" requires deeply nested content per subtopic — bump budget.
     enrich_tokens = 3000 if req.action == "more_topics" else 2200
+    enrich_tokens = scale_tokens_for_language(enrich_tokens, req.language)
     addition = call_openai(system_prompt, user_prompt, max_tokens=enrich_tokens)
     return {"result": addition, "tool": "lesson-plan", "action": req.action}
 
@@ -1111,6 +1138,7 @@ def generate_mc_assessment(req: MCAssessmentRequest):
     # Scale token budget with question count — MCQ + 4 distractors + explanation ~ 350-450 tokens.
     qcount = max(1, int(req.num_questions or 10))
     mc_tokens = min(8000, max(4500, 700 + qcount * 380))
+    mc_tokens = scale_tokens_for_language(mc_tokens, req.language)
     result = call_openai(system_prompt, user_prompt, max_tokens=mc_tokens)
     return {"result": result, "tool": "mc-assessment"}
 
@@ -1334,6 +1362,7 @@ def generate_class_activity(req: ClassActivityRequest):
     # Underbidding silently truncates the assessment + reflection sections of later activities.
     n = max(1, int(req.num_activities or 3))
     max_tok = min(9000, max(3500, 800 + n * 850))
+    max_tok = scale_tokens_for_language(max_tok, req.language)
 
     result = call_openai(system_prompt, user_prompt, max_tokens=max_tok)
     return {"result": result, "tool": "class-activity"}
@@ -2280,6 +2309,7 @@ Rules:
         max_tok = min(8000, max(2000, 400 + n * 180))
     if request.paper_mode:
         max_tok = max(max_tok, 4500)
+    max_tok = scale_tokens_for_language(max_tok, request.language)
 
     try:
         completion = client.chat.completions.create(
@@ -2394,8 +2424,10 @@ Rules:
             return data
         except Exception:
             raise HTTPException(status_code=500, detail="AI generated an invalid response. Please try again.")
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _friendly_ai_error(e)
 
 
 # ─── CODE DEBUGGER ────────────────────────────────────
