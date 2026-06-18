@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 import { sessionAPI } from '../utils/api';
+import { LANGUAGES, labelFor } from '../utils/languages';
 import toast from 'react-hot-toast';
 
 const toolNav = [
@@ -38,8 +39,9 @@ export default function AppLayout({ children, activeTool }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [profileOpen, setProfileOpen] = useState(false);
   const [gradeModalOpen, setGradeModalOpen] = useState(false);
+  const [langModalOpen, setLangModalOpen] = useState(false);
   const [sessions, setSessions] = useState([]);
-  const { user, logout, updateGrade } = useAuth();
+  const { user, logout, updateGrade, updateLanguage } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -66,6 +68,14 @@ export default function AppLayout({ children, activeTool }) {
       setGradeModalOpen(false);
       toast.success(`Grade updated to Class ${newGrade}`);
     } catch { toast.error('Failed to update grade'); }
+  };
+
+  const handleLanguageChange = async (newLang) => {
+    try {
+      await updateLanguage(newLang);
+      setLangModalOpen(false);
+      toast.success(`Responses will now be in ${labelFor(newLang)}`);
+    } catch { toast.error('Failed to update language'); }
   };
 
   return (
@@ -230,6 +240,13 @@ export default function AppLayout({ children, activeTool }) {
                     <span>Change Grade</span>
                     <span className="text-[10.5px] text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full font-semibold">Class {user?.grade}</span>
                   </button>
+                  <button
+                    onClick={() => { setProfileOpen(false); setLangModalOpen(true); }}
+                    className="w-full px-4 py-2.5 text-left text-[13px] text-gray-600 hover:bg-gray-50 flex items-center justify-between"
+                  >
+                    <span>Response Language</span>
+                    <span className="text-[10.5px] text-primary-700 bg-primary-50 px-2 py-0.5 rounded-full font-semibold">{labelFor(user?.language)}</span>
+                  </button>
                   <div className="border-t border-gray-100" />
                   <button
                     onClick={() => { logout(); navigate('/'); }}
@@ -286,6 +303,54 @@ export default function AppLayout({ children, activeTool }) {
               </div>
               <button
                 onClick={() => setGradeModalOpen(false)}
+                className="w-full mt-5 py-2 text-gray-400 text-sm hover:text-gray-600 font-medium"
+              >
+                Cancel
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Response Language Modal */}
+      <AnimatePresence>
+        {langModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setLangModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={e => e.stopPropagation()}
+              className="bg-white rounded-3xl p-7 w-full max-w-md shadow-[0_30px_80px_-20px_rgba(15,23,42,0.25)]"
+            >
+              <h3 className="font-display font-extrabold text-xl text-gray-900 mb-1">Response Language</h3>
+              <p className="text-[13px] text-gray-500 mb-5">
+                The AI will explain in this language. Formulas, code, and technical terms stay in English so exam prep isn't affected.
+              </p>
+              <div className="grid grid-cols-2 gap-2.5 max-h-[320px] overflow-y-auto pr-1">
+                {LANGUAGES.map(l => (
+                  <button
+                    key={l.value}
+                    onClick={() => handleLanguageChange(l.value)}
+                    className={`py-2.5 px-3 rounded-xl text-[13px] font-semibold transition-all text-left ${
+                      (user?.language || 'English') === l.value
+                        ? 'bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-[0_8px_20px_-8px_rgba(46,134,193,0.55)]'
+                        : 'bg-gray-50 text-gray-600 hover:bg-primary-50 hover:text-primary-600'
+                    }`}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setLangModalOpen(false)}
                 className="w-full mt-5 py-2 text-gray-400 text-sm hover:text-gray-600 font-medium"
               >
                 Cancel

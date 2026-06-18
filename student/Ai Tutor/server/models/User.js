@@ -6,6 +6,9 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   password: { type: String, required: true, minlength: 6 },
   grade: { type: Number, required: true, min: 1, max: 12 },
+  // Preferred language the AI responds in. Stored as the English name of the
+  // language (e.g. "Hindi"); "English" is the default / no-op.
+  language: { type: String, default: 'English', trim: true },
 }, { timestamps: true });
 
 userSchema.pre('save', async function(next) {

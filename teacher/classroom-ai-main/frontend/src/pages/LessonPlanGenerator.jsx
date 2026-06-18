@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import OutputBox from '../components/OutputBox'
 import CustomSelect from '../components/CustomSelect'
+import LanguageSelect from '../components/LanguageSelect'
 import ChatHistory from '../components/ChatHistory'
 import UsageCounter from '../components/UsageCounter'
 import ErrorToast from '../components/ErrorToast'
@@ -150,6 +151,7 @@ export default function LessonPlanGenerator() {
     duration: '45 minutes', objectives: '', standards: '',
     include_topic_overview: true,
     additional_notes: '',
+    language: 'English',
   })
   const [subjectTrack, setSubjectTrack] = useState('core')
   const [topicTrack, setTopicTrack]     = useState('core')
@@ -311,7 +313,7 @@ export default function LessonPlanGenerator() {
           existing_plan: result,
           topic, grade_level: form.grade_level, subject: form.subject,
           duration: form.duration, topic_description: description,
-          action,
+          action, language: form.language,
         })
       })
       const data = await res.json()
@@ -527,6 +529,9 @@ export default function LessonPlanGenerator() {
                 value={form.additional_notes} onChange={e => set('additional_notes', e.target.value)}
                 style={{ minHeight: 55, maxHeight: 90, borderColor: '#bfdbfe' }}/>
             </div>
+
+            {/* Output Language */}
+            <LanguageSelect value={form.language} onChange={e => set('language', e.target.value)} accent="#bfdbfe" />
 
             {/* Upload Teaching Material */}
             <div className="form-group">

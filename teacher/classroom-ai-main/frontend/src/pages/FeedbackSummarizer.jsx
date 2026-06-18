@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { LANGUAGES } from '../data/languages'
 
 const API = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin
 const STORAGE_KEY = 'classroom-result-feedback'
@@ -52,6 +53,7 @@ export default function FeedbackSummarizer() {
   const [gradeLevel, setGradeLevel] = useState('')
   const [feedbackType, setFeedbackType] = useState('academic')
   const [tone, setTone] = useState('encouraging')
+  const [language, setLanguage] = useState('English')
   const [context, setContext] = useState('')
   const [ratings, setRatings] = useState({})
   const [result, setResult] = useState(() => {
@@ -91,6 +93,7 @@ export default function FeedbackSummarizer() {
           tone,
           ratings,
           context,
+          language,
         }),
       })
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail || 'Server error') }
@@ -111,7 +114,7 @@ export default function FeedbackSummarizer() {
   }
 
   const handleReset = () => {
-    setStudentName(''); setGradeLevel(''); setFeedbackType('academic'); setTone('encouraging')
+    setStudentName(''); setGradeLevel(''); setFeedbackType('academic'); setTone('encouraging'); setLanguage('English')
     setContext(''); setRatings({}); setResult(null); setError('')
     localStorage.removeItem(STORAGE_KEY)
   }
@@ -229,6 +232,12 @@ export default function FeedbackSummarizer() {
             <Field label="📋 Feedback Type" required>
               <select value={feedbackType} onChange={e => setFeedbackType(e.target.value)} style={inputStyle}>
                 {FEEDBACK_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </Field>
+
+            <Field label="🌐 Output Language">
+              <select value={language} onChange={e => setLanguage(e.target.value)} style={inputStyle}>
+                {LANGUAGES.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
               </select>
             </Field>
 

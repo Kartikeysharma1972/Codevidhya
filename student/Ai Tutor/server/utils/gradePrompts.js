@@ -1,5 +1,30 @@
 import { getSyllabusOutline, getChapterInfo } from './curriculumData.js';
 
+// Native-script display names so the model is anchored to the right script.
+const LANGUAGE_NATIVE = {
+  Hindi: 'हिन्दी', Bengali: 'বাংলা', Telugu: 'తెలుగు', Marathi: 'मराठी',
+  Tamil: 'தமிழ்', Gujarati: 'ગુજરાતી', Kannada: 'ಕನ್ನಡ', Malayalam: 'മലയാളം',
+  Punjabi: 'ਪੰਜਾਬੀ', Odia: 'ଓଡ଼ିଆ', Urdu: 'اردو', Assamese: 'অসমীয়া',
+};
+
+// Returns a prompt block that makes the model answer in the chosen regional
+// language while keeping formulas, code, technical terms and JSON keys in
+// English so exam-readiness and machine-parseable output are never broken.
+// Returns '' for English (the default) — a no-op.
+export function buildLanguageDirective(language) {
+  if (!language || language === 'English') return '';
+  const native = LANGUAGE_NATIVE[language];
+  const label = native ? `${language} (${native})` : language;
+  return `
+RESPONSE LANGUAGE — VERY IMPORTANT:
+- Write your ENTIRE response in ${label}. All explanations, headings, section titles, questions, options, and instructions must be in ${label}, using its natural script.
+- KEEP THESE IN ENGLISH (do NOT translate or transliterate them): mathematical and chemical formulas/equations and all LaTeX, numbers and units, code and programming keywords, and standard scientific/technical proper terms. When you first use such an English term, you may add its ${language} meaning in brackets.
+- If the student writes to you in Roman script / Hinglish, you may mirror that romanized style instead of the native script.
+- EXCEPTION: If the subject being studied is itself a language (e.g. English, Sanskrit, or another language course), teach that subject in its own language as usual; use ${label} only for helpful asides.
+- If output must be JSON, keep ALL JSON keys and any "type"/enum values EXACTLY in English — only the human-readable text values (question, options, explanation, etc.) go in ${label}.
+`;
+}
+
 export function getGradeGroup(grade) {
   if (grade <= 3) return 'primary-lower';
   if (grade <= 5) return 'primary-upper';
@@ -396,7 +421,7 @@ MATH RENDERING (LaTeX):
   - Block: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
 - Use LaTeX for fractions, roots, powers, subscripts, Greek letters, chemical formulas etc.
 - Chemical equations: $\\text{Zn} + \\text{CuSO}_4 \\rightarrow \\text{ZnSO}_4 + \\text{Cu}$
-
+${buildLanguageDirective(extra.language)}
 `;
 
   if (tool === 'concept-explainer') {

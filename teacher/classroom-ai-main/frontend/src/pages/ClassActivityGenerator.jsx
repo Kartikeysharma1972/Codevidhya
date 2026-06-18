@@ -1,6 +1,7 @@
 import React, { useState, useRef, useMemo } from 'react'
 import OutputBox from '../components/OutputBox'
 import CustomSelect from '../components/CustomSelect'
+import LanguageSelect from '../components/LanguageSelect'
 import ChatHistory from '../components/ChatHistory'
 import UsageCounter from '../components/UsageCounter'
 import ErrorToast from '../components/ErrorToast'
@@ -136,6 +137,7 @@ export default function ClassActivityGenerator() {
     blooms_level: 'understand',
     learning_outcomes: '', materials_available: '',
     additional_instructions: '',
+    language: 'English',
   })
   const [subjectTrack, setSubjectTrack] = useState('core')
   const [topicTrack, setTopicTrack]     = useState('core')
@@ -536,6 +538,9 @@ export default function ClassActivityGenerator() {
                 onWheel={lockScroll}
                 style={{ ...scrollStyle, minHeight: 55, maxHeight: 90, resize: 'vertical', borderColor: ACCENT_MID }}/>
             </div>
+
+            {/* Output Language */}
+            <LanguageSelect value={form.language} onChange={e => set('language', e.target.value)} accent={ACCENT_MID} />
 
             {/* Upload Teaching Material */}
             <div className="form-group">

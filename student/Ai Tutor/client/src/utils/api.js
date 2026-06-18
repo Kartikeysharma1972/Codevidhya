@@ -28,6 +28,7 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getMe: () => api.get('/auth/me'),
   updateGrade: (grade) => api.put('/auth/update-grade', { grade }),
+  updateLanguage: (language) => api.put('/auth/update-language', { language }),
 };
 
 export const aiAPI = {

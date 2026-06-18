@@ -166,6 +166,7 @@ class WorksheetRequest(BaseModel):
     source_material: str = ""
     topic_description: str = ""
     topic_track: str = "core"
+    language: str = "English"
 
 class LessonPlanRequest(BaseModel):
     topic: str
@@ -185,6 +186,7 @@ class LessonPlanRequest(BaseModel):
     topic_description: str = ""
     # "core" (CBSE TOC topic) or "miscellaneous" (curated extra topic).
     topic_track: str = "core"
+    language: str = "English"
 
 class LessonPlanEnrichRequest(BaseModel):
     # The existing lesson plan body (so the model can extend it coherently).
@@ -196,6 +198,7 @@ class LessonPlanEnrichRequest(BaseModel):
     topic_description: str = ""
     # One of: "more_activities", "more_examples", "more_topics"
     action: str = "more_activities"
+    language: str = "English"
 
 class MCAssessmentRequest(BaseModel):
     topic: str
@@ -209,6 +212,7 @@ class MCAssessmentRequest(BaseModel):
     standards: str = ""
     additional_instructions: str = ""
     source_material: str = ""
+    language: str = "English"
 
 # ─── RAG ENDPOINT MODELS ──────────────────────────────
 
@@ -380,6 +384,39 @@ def get_grade_language_profile(grade_level: str) -> str:
         f"  • EXPECTED ANSWER LENGTH: {answer_len}.\n"
         f"  • EXAMPLES MUST USE: {examples}.\n"
         f"  The difficulty, wording, and depth must be UNMISTAKABLY {grade_level} — clearly simpler than the grade above and clearly more advanced than the grade below."
+    )
+
+
+# Native-script names so the model is anchored to the correct script.
+_LANGUAGE_NATIVE = {
+    "Hindi": "हिन्दी", "Bengali": "বাংলা", "Telugu": "తెలుగు", "Marathi": "मराठी",
+    "Tamil": "தமிழ்", "Gujarati": "ગુજરાતી", "Kannada": "ಕನ್ನಡ", "Malayalam": "മലയാളം",
+    "Punjabi": "ਪੰਜਾਬੀ", "Odia": "ଓଡ଼ିଆ", "Urdu": "اردو", "Assamese": "অসমীয়া",
+}
+
+
+def get_language_directive(language: str) -> str:
+    """Prompt block that makes the model write its output in the chosen regional
+    language while keeping formulas, code, technical terms and JSON keys in
+    English so exam-readiness and machine-parseable output are never broken.
+    Returns '' for English (the default) — a no-op."""
+    lang = (language or "English").strip()
+    if not lang or lang == "English":
+        return ""
+    native = _LANGUAGE_NATIVE.get(lang)
+    label = f"{lang} ({native})" if native else lang
+    return (
+        "\n═══ OUTPUT LANGUAGE — VERY IMPORTANT ═══\n"
+        f"- Write the ENTIRE output in {label}, using its natural script. All headings, "
+        "instructions, questions, options, explanations and answer keys must be in this language.\n"
+        "- KEEP THESE IN ENGLISH (do NOT translate or transliterate): mathematical and chemical "
+        "formulas/equations, numbers and units, code and programming keywords, and standard "
+        "scientific/technical proper terms. You may add the regional meaning in brackets on first use.\n"
+        "- EXCEPTION: if the subject itself is a language (English, Sanskrit, etc.), teach that "
+        f"subject in its own language as usual; use {label} only for helpful asides.\n"
+        "- If the output is JSON, keep ALL JSON keys and any \"type\"/enum values EXACTLY in English — "
+        f"only the human-readable text values (question, options, explanation, etc.) go in {label}.\n"
+        "═════════════════════════════════════════\n"
     )
 
 
@@ -598,6 +635,7 @@ def generate_worksheet(req: WorksheetRequest):
         "- Use bullet points (- ) for lists\n"
         "- Use --- for section dividers\n"
     )
+    system_prompt += get_language_directive(req.language)
 
     guardrails = get_curriculum_guardrails(req.grade_level, req.subject, req.topic, req.topic_description or "", strict_syllabus=(req.topic_track == "core"))
 
@@ -795,6 +833,7 @@ def generate_lesson_plan(req: LessonPlanRequest):
         "- For math: plain text (e.g. x^2 + 2x + 1). NO LaTeX $$ or \\(...\\).\n"
         "- Replace every [square-bracket placeholder] with concrete content.\n\n"
         f"{lang_profile}"
+        + get_language_directive(req.language)
     )
 
     user_prompt = (
@@ -867,6 +906,7 @@ def generate_lesson_plan(req: LessonPlanRequest):
             "You are a subject matter expert. Create a concise teacher quick-reference sheet. "
             f"{lang_profile} "
             "Format with clean markdown: ## for section headers, **bold** for key terms, - for bullet lists."
+            + get_language_directive(req.language)
         )
 
         topic_prompt = (
@@ -955,6 +995,7 @@ def enrich_lesson_plan(req: LessonPlanEnrichRequest):
         "- For math, write equations inline as plain text (e.g. x = (-b ± √(b²-4ac)) / 2a).\n"
         "- Model all questions and solutions on NCERT textbook style with real numbers and worked steps."
     )
+    system_prompt += get_language_directive(req.language)
 
     user_prompt = (
         f"Existing lesson plan (for reference — do not repeat its content):\n"
@@ -1036,6 +1077,7 @@ def generate_mc_assessment(req: MCAssessmentRequest):
         "- Use # for title, ## for sections, **bold** for key terms, numbered lists for questions, - for bullets.\n"
         f"{lang_profile} "
         + ("ALL questions must come directly from the provided source material. " if req.source_material.strip() else "")
+        + get_language_directive(req.language)
     )
 
     user_prompt = (
@@ -1091,6 +1133,7 @@ class ClassActivityRequest(BaseModel):
     source_material: str = ""
     topic_description: str = ""
     topic_track: str = "core"
+    language: str = "English"
 
 @app.post("/api/class-activity")
 def generate_class_activity(req: ClassActivityRequest):
@@ -1235,6 +1278,7 @@ def generate_class_activity(req: ClassActivityRequest):
         "- Use bullet points (- ) for materials, outcomes, and reflection questions\n"
         "- Use --- between activities as dividers\n"
     )
+    system_prompt += get_language_directive(req.language)
 
     user_prompt = (
         f"Create {req.num_activities} detailed, classroom-tested activities for {req.grade_level} students.\n\n"
@@ -1764,6 +1808,7 @@ class QuizRequest(BaseModel):
     paper_mode: bool = False
     topic_description: str = ""
     topic_track: str = "core"                 # core | misc
+    language: str = "English"
 
 
 def _get_subject_question_patterns(subject: str, qtype: str) -> str:
@@ -2209,6 +2254,7 @@ async def generate_quiz(request: QuizRequest):
 {subject_patterns}
 
 {grade_profile}
+{get_language_directive(request.language)}
 {topic_ctx}
 
 {get_curriculum_guardrails(request.grade_level, request.subject, request.topic, request.topic_description or "", strict_syllabus=(request.question_category == "ncert" and request.topic_track == "core"))}
@@ -2695,6 +2741,7 @@ class FeedbackRequest(BaseModel):
     tone: str = "encouraging"
     ratings: dict | None = None
     context: str = ""
+    language: str = "English"
 
 @app.post("/api/generate-feedback")
 def generate_feedback(req: FeedbackRequest):
@@ -2749,6 +2796,7 @@ def generate_feedback(req: FeedbackRequest):
         "OUTPUT FORMAT (STRICT):\n"
         "Return ONLY the feedback paragraph as plain text. No JSON, no bullet points, no markdown headers, no '**bold**' tags, "
         "no preamble like 'Here is the feedback:'. Just the paragraph itself."
+        + get_language_directive(req.language)
     )
 
     user_prompt = (

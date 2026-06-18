@@ -4,6 +4,7 @@ import UsageCounter from '../components/UsageCounter'
 import { RichTextToolbar } from '../components/OutputBox'
 import { useAuth } from '../context/AuthContext'
 import { GRADES, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics, findTopicDescription } from '../data/cbseSubjects'
+import { LANGUAGES } from '../data/languages'
 
 const API = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin
 const STORAGE_KEY = 'classroom-qpaper-state'
@@ -221,6 +222,7 @@ export default function QuestionPaperGenerator() {
   const [numQ, setNumQ]                 = useState(10)
   const [questionCategory, setQuestionCategory] = useState('ncert')
   const [questionType, setQuestionType] = useState('mix')
+  const [language, setLanguage]         = useState('English')
   const [schoolLogo, setSchoolLogo]     = useState(null)
   const [schoolLogoName, setSchoolLogoName] = useState('')
 
@@ -285,7 +287,7 @@ export default function QuestionPaperGenerator() {
       const topicDesc = findTopicDescription(grade, subject, topic) || ''
       const res = await fetch(`${API}/api/quiz`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic, grade_level: grade, subject, num_questions: numQ, difficulty, question_category: questionCategory, question_type: questionType, paper_mode: true, topic_description: topicDesc, topic_track: subjectTrack }),
+        body: JSON.stringify({ topic, grade_level: grade, subject, num_questions: numQ, difficulty, question_category: questionCategory, question_type: questionType, paper_mode: true, topic_description: topicDesc, topic_track: subjectTrack, language }),
       })
       if (!res.ok) {
         let errMsg = 'Failed to generate question paper'
@@ -406,6 +408,11 @@ export default function QuestionPaperGenerator() {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div><Label>Difficulty</Label><SelectDown value={difficulty} onChange={setDifficulty} options={[{ value: 'easy', label: '🟢 Easy' }, { value: 'medium', label: '🟡 Medium' }, { value: 'hard', label: '🔴 Hard' }]} /></div>
           <div><Label>Number of Questions</Label><SelectDown value={numQ} onChange={v => setNumQ(Number(v))} options={[5,8,10,15,20,25,30].map(n => ({ value: n, label: `${n} questions` }))} /></div>
+        </div>
+
+        <div><Label>Output Language</Label>
+          <SelectDown value={language} onChange={setLanguage} options={LANGUAGES} />
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-3)', marginTop: 6 }}>Formulas, code & technical terms stay in English.</div>
         </div>
 
         <div><Label>Question Category</Label>

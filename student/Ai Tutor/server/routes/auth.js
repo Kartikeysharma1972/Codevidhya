@@ -26,7 +26,7 @@ router.post('/signup', async (req, res) => {
     const token = generateToken(user);
     res.status(201).json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, grade: user.grade }
+      user: { id: user._id, name: user.name, email: user.email, grade: user.grade, language: user.language || 'English' }
     });
   } catch (err) {
     console.error('Signup error:', err.message, err.stack);
@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
     const token = generateToken(user);
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, grade: user.grade }
+      user: { id: user._id, name: user.name, email: user.email, grade: user.grade, language: user.language || 'English' }
     });
   } catch (err) {
     console.error('Login error:', err.message, err.stack);
@@ -75,7 +75,31 @@ router.put('/update-grade', authMiddleware, async (req, res) => {
     const token = generateToken(user);
     res.json({
       token,
-      user: { id: user._id, name: user.name, email: user.email, grade: user.grade }
+      user: { id: user._id, name: user.name, email: user.email, grade: user.grade, language: user.language || 'English' }
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Allowed response languages (English name -> stored value). Keep in sync with
+// the client-side list in client/src/utils/languages.js.
+const SUPPORTED_LANGUAGES = [
+  'English', 'Hindi', 'Bengali', 'Telugu', 'Marathi', 'Tamil', 'Gujarati',
+  'Kannada', 'Malayalam', 'Punjabi', 'Odia', 'Urdu', 'Assamese',
+];
+
+router.put('/update-language', authMiddleware, async (req, res) => {
+  try {
+    const { language } = req.body;
+    if (!language || !SUPPORTED_LANGUAGES.includes(language)) {
+      return res.status(400).json({ error: 'Unsupported language' });
+    }
+    const user = await User.findByIdAndUpdate(req.userId, { language }, { new: true }).select('-password');
+    const token = generateToken(user);
+    res.json({
+      token,
+      user: { id: user._id, name: user.name, email: user.email, grade: user.grade, language: user.language || 'English' }
     });
   } catch (err) {
     res.status(500).json({ error: 'Server error' });

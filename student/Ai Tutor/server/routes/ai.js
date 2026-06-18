@@ -101,7 +101,7 @@ router.post('/concept-explainer', authMiddleware, async (req, res) => {
 
     const systemPrompt = buildSystemPrompt(user.grade, 'concept-explainer', {
       explanationLevel: explanationLevel || 'beginner',
-      subject, chapter,
+      subject, chapter, language: user.language,
     });
 
     let session;
@@ -141,7 +141,7 @@ router.post('/concept-explainer/image', authMiddleware, upload.single('image'), 
 
     const systemPrompt = buildSystemPrompt(user.grade, 'concept-explainer', {
       explanationLevel: explanationLevel || 'beginner',
-      subject, chapter,
+      subject, chapter, language: user.language,
     });
 
     const imageBuffer = fs.readFileSync(req.file.path);
@@ -214,7 +214,7 @@ router.post('/concept-explainer/file', authMiddleware, upload.single('file'), as
 
     const systemPrompt = buildSystemPrompt(user.grade, 'concept-explainer', {
       explanationLevel: explanationLevel || 'beginner',
-      subject, chapter,
+      subject, chapter, language: user.language,
     });
 
     const userContent = `The student has uploaded a document. Here is the extracted text from the file:\n\n---\n${fileContent.substring(0, 15000)}\n---\n\n${message || 'Please explain the concepts in this document.'}`;
@@ -269,7 +269,7 @@ router.post('/summarize', authMiddleware, upload.single('file'), async (req, res
         const imageBase64 = imageBuffer.toString('base64');
         const systemPrompt = buildSystemPrompt(user.grade, 'document-summarizer', {
           summarizationMode: mode || 'full',
-          query,
+          query, language: user.language,
         });
         const aiResponse = await chatWithGroqVision(
           systemPrompt,
@@ -305,7 +305,7 @@ router.post('/summarize', authMiddleware, upload.single('file'), async (req, res
 
     const systemPrompt = buildSystemPrompt(user.grade, 'document-summarizer', {
       summarizationMode: mode || 'full',
-      query,
+      query, language: user.language,
     });
 
     const aiResponse = await chatWithGroq(systemPrompt, [
@@ -374,7 +374,7 @@ router.post('/project-ideas', authMiddleware, async (req, res) => {
     const avoidIdeas = await getRecentProjectTitles(req.userId, subject, 40);
 
     const systemPrompt = buildSystemPrompt(user.grade, 'project-generator', {
-      subject, projectType, topic, count: 4, avoidIdeas,
+      subject, projectType, topic, count: 4, avoidIdeas, language: user.language,
     });
 
     const aiResponse = await chatWithGroq(systemPrompt, [
@@ -467,6 +467,7 @@ router.post('/mock-test/generate', authMiddleware, async (req, res) => {
       questionType: questionType || null,
       questionCount: config.totalQuestions,
       avoidQuestions: avoid.texts,
+      language: user.language,
     });
 
     let questions = [];
@@ -634,7 +635,7 @@ router.post('/focus-area', authMiddleware, async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     const cleanTopic = (topic || '').trim();
-    const systemPrompt = buildSystemPrompt(user.grade, 'focus-area', { subject, chapter, topic: cleanTopic });
+    const systemPrompt = buildSystemPrompt(user.grade, 'focus-area', { subject, chapter, topic: cleanTopic, language: user.language });
 
     const userMessage = cleanTopic
       ? `Provide complete focus area study material for: "${cleanTopic}" (Chapter context: ${chapter}, Subject: ${subject})`
