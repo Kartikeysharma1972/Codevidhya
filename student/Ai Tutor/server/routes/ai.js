@@ -22,10 +22,13 @@ function getGroq() {
 // than English, so the English-tuned max_tokens budgets truncate regional output
 // mid-answer (broken mock-test JSON, cut-off study notes). Bump the budget for
 // non-English languages, capped to stay within the model's completion limit.
+// Cap stays <= 8192 because the AI Tutor model (llama-4-scout) rejects any
+// max_tokens above 8192 with a 400 — which previously surfaced as a generic
+// "AI service error" for every non-English request.
 function scaleTokens(maxTokens, language) {
   const lang = (language || 'English').trim();
   if (!lang || lang === 'English') return maxTokens;
-  return Math.min(12000, Math.round(maxTokens * 2.2));
+  return Math.min(8000, Math.round(maxTokens * 2.2));
 }
 
 const upload = multer({
