@@ -18,7 +18,16 @@ if [ ! -f "$SCRIPT_DIR/secrets.env" ]; then
   echo "       cp deploy/aws/secrets.env.example deploy/aws/secrets.env  and fill it in." >&2
   exit 1
 fi
-set -a; source "$SCRIPT_DIR/secrets.env"; set +a
+# Load KEY=VALUE pairs literally — robust against & ? = and Windows CRLF in
+# values (plain `source` chokes on the & in MongoDB Atlas URIs).
+while IFS= read -r line || [ -n "$line" ]; do
+  line="${line%$'\r'}"
+  case "$line" in ''|\#*) continue;; esac
+  key="${line%%=*}"
+  val="${line#*=}"
+  case "$key" in ''|*[!A-Za-z0-9_]*) continue;; esac
+  export "$key=$val"
+done < "$SCRIPT_DIR/secrets.env"
 : "${SERVER_IP:?Set SERVER_IP in deploy/aws/secrets.env (your EC2 public/Elastic IP)}"
 GROQ_MODEL="${GROQ_MODEL:-llama-3.3-70b-versatile}"
 
