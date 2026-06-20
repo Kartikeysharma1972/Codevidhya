@@ -20,6 +20,7 @@ build/
 .env.*.local
 *.pem
 *.key
+deploy/aws/secrets.env
 
 # ─── Logs / OS junk ──────────────────────────────
 *.log
