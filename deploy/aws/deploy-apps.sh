@@ -30,6 +30,9 @@ while IFS= read -r line || [ -n "$line" ]; do
 done < "$SCRIPT_DIR/secrets.env"
 : "${SERVER_IP:?Set SERVER_IP in deploy/aws/secrets.env (your EC2 public/Elastic IP)}"
 GROQ_MODEL="${GROQ_MODEL:-llama-3.3-70b-versatile}"
+# Pool of keys for automatic rotation on rate-limit; fall back to the single key.
+GROQ_API_KEYS="${GROQ_API_KEYS:-${GROQ_API_KEY:-}}"
+GROQ_API_KEY="${GROQ_API_KEY:-${GROQ_API_KEYS%%,*}}"
 
 echo "==> Deploying Codevidhya for public IP: $SERVER_IP"
 
@@ -56,6 +59,7 @@ PORT=5000
 MONGODB_URI=${AITUTOR_MONGODB_URI}
 JWT_SECRET=${AITUTOR_JWT_SECRET}
 GROQ_API_KEY=${GROQ_API_KEY}
+GROQ_API_KEYS=${GROQ_API_KEYS}
 EOF
 
 cat > "$ROOT/Admin tool/server/.env" <<EOF
@@ -68,6 +72,7 @@ EOF
 
 cat > "$ROOT/teacher/classroom-ai-main/backend/.env" <<EOF
 GROQ_API_KEY=${GROQ_API_KEY}
+GROQ_API_KEYS=${GROQ_API_KEYS}
 GROQ_MODEL=${GROQ_MODEL}
 CORS_ORIGINS=http://${SERVER_IP},http://${SERVER_IP}:8001,http://localhost:5176
 EOF

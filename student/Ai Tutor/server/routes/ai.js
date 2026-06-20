@@ -12,10 +12,56 @@ import { searchWikipediaImage, searchMultipleImages } from '../utils/imageSearch
 import { getAvoidList, dedupeAgainst, recordQuestions } from '../utils/questionMemory.js';
 
 const router = Router();
-let groq;
-function getGroq() {
-  if (!groq) groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  return groq;
+
+// ─── Groq API key pool with automatic rotation ─────────────────────────────
+// Multiple keys so a rate-limit / quota / capacity error on one key
+// transparently falls over to the next one — no manual retry needed. We stick
+// with the last key that worked so later requests don't re-hit a dead one.
+// Configure GROQ_API_KEYS="key1,key2,key3" (falls back to single GROQ_API_KEY).
+function loadGroqKeys() {
+  const raw = (process.env.GROQ_API_KEYS || process.env.GROQ_API_KEY || '').trim();
+  return [...new Set(raw.split(',').map((k) => k.trim()).filter(Boolean))];
+}
+const GROQ_KEYS = loadGroqKeys();
+const groqClients = GROQ_KEYS.map((apiKey) => new Groq({ apiKey }));
+let groqIdx = 0;
+console.log(`[groq] loaded ${groqClients.length} API key(s) for rotation`);
+
+function isRateLimited(err) {
+  const status = err?.status || err?.response?.status;
+  const msg = (err?.message || '').toLowerCase();
+  return (
+    [429, 401, 403, 503].includes(status) ||
+    msg.includes('rate limit') ||
+    msg.includes('quota') ||
+    msg.includes('too many requests') ||
+    msg.includes('over capacity') ||
+    msg.includes('capacity')
+  );
+}
+
+// Drop-in replacement for groq.chat.completions.create that rotates keys on
+// rate-limit / capacity errors. Throws only once every key has been exhausted.
+async function groqCreate(params) {
+  if (!groqClients.length) throw new Error('No GROQ API keys configured');
+  let lastErr;
+  for (let attempt = 0; attempt < groqClients.length; attempt++) {
+    const i = (groqIdx + attempt) % groqClients.length;
+    try {
+      const res = await groqClients[i].chat.completions.create(params);
+      groqIdx = i;
+      return res;
+    } catch (err) {
+      lastErr = err;
+      if (isRateLimited(err)) {
+        console.warn(`[groq] key #${i + 1} unavailable (rate-limit/capacity) — trying next key…`);
+        continue;
+      }
+      throw err; // a real error (bad request etc.) — don't burn the other keys
+    }
+  }
+  console.error('[groq] all keys exhausted (rate-limited)');
+  throw lastErr;
 }
 
 // Non-Latin scripts (Hindi, Telugu, Tamil, etc.) tokenize into ~2-3x more tokens
@@ -73,7 +119,7 @@ async function chatWithGroq(systemPrompt, messages, options = {}) {
     ...trimmed,
   ].filter(m => m.role && m.content);
 
-  const response = await getGroq().chat.completions.create({
+  const response = await groqCreate({
     model: options.model || 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: formattedMessages,
     temperature: options.temperature ?? 0.7,
@@ -86,7 +132,7 @@ async function chatWithGroq(systemPrompt, messages, options = {}) {
 
 
 async function chatWithGroqVision(systemPrompt, textContent, imageBase64, mimeType, language) {
-  const response = await getGroq().chat.completions.create({
+  const response = await groqCreate({
     model: 'meta-llama/llama-4-scout-17b-16e-instruct',
     messages: [
       { role: 'system', content: systemPrompt },

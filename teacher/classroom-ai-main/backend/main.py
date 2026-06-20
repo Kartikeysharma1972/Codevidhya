@@ -101,9 +101,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-OPENAI_API_KEY = os.getenv("GROQ_API_KEY", "").strip() or "missing-set-GROQ_API_KEY-in-env"
 OPENAI_MODEL   = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
-client = OpenAI(api_key=OPENAI_API_KEY, base_url="https://api.groq.com/openai/v1")
+
+# ─── Groq API key pool with automatic rotation ─────────────────────────────
+# Multiple keys so a rate-limit / quota / capacity error on one key
+# transparently falls over to the next — the user never has to retry. Configure
+# GROQ_API_KEYS="key1,key2,key3" (falls back to a single GROQ_API_KEY).
+def _load_groq_keys():
+    raw = (os.getenv("GROQ_API_KEYS") or os.getenv("GROQ_API_KEY") or "").strip()
+    seen, keys = set(), []
+    for k in raw.split(","):
+        k = k.strip()
+        if k and k not in seen:
+            seen.add(k)
+            keys.append(k)
+    return keys
+
+_GROQ_KEYS = _load_groq_keys() or ["missing-set-GROQ_API_KEY-in-env"]
+_GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+
+
+def _is_rate_limited(err):
+    status = getattr(err, "status_code", None) or getattr(getattr(err, "response", None), "status_code", None)
+    msg = str(err).lower()
+    return status in (429, 401, 403, 503) or any(
+        s in msg for s in ("rate limit", "quota", "too many requests", "over capacity", "capacity")
+    )
+
+
+class _RotatingCompletions:
+    def __init__(self, parent):
+        self._p = parent
+
+    def create(self, **kwargs):
+        clients = self._p._clients
+        last_err = None
+        for attempt in range(len(clients)):
+            i = (self._p._idx + attempt) % len(clients)
+            try:
+                res = clients[i].chat.completions.create(**kwargs)
+                self._p._idx = i  # stick with the key that worked
+                return res
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                if _is_rate_limited(e):
+                    print(f"[groq] key #{i + 1} unavailable (rate-limit/capacity) — trying next key…", file=sys.stderr)
+                    continue
+                raise
+        print("[groq] all keys exhausted (rate-limited)", file=sys.stderr)
+        raise last_err
+
+
+class _RotatingChat:
+    def __init__(self, parent):
+        self.completions = _RotatingCompletions(parent)
+
+
+class RotatingGroq:
+    """Drop-in for OpenAI client that rotates Groq keys on rate-limit errors."""
+    def __init__(self, keys, base_url):
+        self._clients = [OpenAI(api_key=k, base_url=base_url) for k in keys]
+        self._idx = 0
+        self.chat = _RotatingChat(self)
+
+
+client = RotatingGroq(_GROQ_KEYS, _GROQ_BASE_URL)
+print(f"[groq] loaded {len(_GROQ_KEYS)} API key(s) for rotation", file=sys.stderr)
 
 # ─── AUTH MODELS & ENDPOINTS ─────────────────────────
 
