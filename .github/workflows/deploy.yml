@@ -28,7 +28,7 @@ jobs:
           script_stop: true
           script: |
             set -euo pipefail
-            cd "${{ secrets.DEPLOY_PATH }}"
+            cd /home/ubuntu/Codevidhya
             echo "==> Fetching latest main"
             git fetch origin main
             # Live data (*.db), uploads/, .venv and .env files are all gitignored,
