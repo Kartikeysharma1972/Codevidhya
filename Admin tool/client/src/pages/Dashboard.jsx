@@ -10,6 +10,8 @@ import {
   HiOutlineUserGroup,
   HiOutlineFlag,
   HiOutlineSignal,
+  HiOutlineExclamationTriangle,
+  HiOutlineChevronRight,
 } from 'react-icons/hi2';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -49,14 +51,24 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [flaggedStats, setFlaggedStats] = useState(null);
+  const [flaggedList, setFlaggedList] = useState([]);
   const [onlineData, setOnlineData] = useState(null);
 
   useEffect(() => {
     fetchDashboard();
     fetchFlaggedStats();
+    fetchFlagged();
     fetchOnline();
-    const interval = setInterval(fetchOnline, 30000);
-    return () => clearInterval(interval);
+    // Kick off a fresh risk scan so the flagged section reflects the latest
+    // conversations, then refresh the flagged list once it completes.
+    api.post('/moderation/scan').then(() => {
+      fetchFlaggedStats();
+      fetchFlagged();
+    }).catch(() => {});
+    // Real-time refresh: presence every 15s, flagged conversations every 20s.
+    const onlineInt = setInterval(fetchOnline, 15000);
+    const flaggedInt = setInterval(() => { fetchFlaggedStats(); fetchFlagged(); }, 20000);
+    return () => { clearInterval(onlineInt); clearInterval(flaggedInt); };
   }, []);
 
   const fetchDashboard = async () => {
@@ -74,6 +86,13 @@ export default function Dashboard() {
     try {
       const res = await api.get('/moderation/stats');
       setFlaggedStats(res.data);
+    } catch {}
+  };
+
+  const fetchFlagged = async () => {
+    try {
+      const res = await api.get('/moderation/flagged?status=pending&limit=6');
+      setFlaggedList(res.data?.flags || []);
     } catch {}
   };
 
@@ -118,6 +137,73 @@ export default function Dashboard() {
   return (
     <div>
       <Header title="Dashboard" subtitle="School overview at a glance" />
+
+      {/* ── Flagged Risk Conversations (top priority) ───────────────────── */}
+      {flaggedList.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card p-5 mb-6 border border-red-200 bg-gradient-to-br from-red-50/80 to-white"
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                <HiOutlineExclamationTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-display font-bold text-gray-900">Flagged Risk Conversations</h3>
+                <p className="text-xs text-gray-500">
+                  {pendingFlagged} pending review · auto-detected in real time
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/chats')}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-red-600 hover:text-red-700"
+            >
+              Review all <HiOutlineChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {flaggedList.map((flag) => {
+              const subj = flag.subject;
+              const idShort = subj?.id ? String(subj.id).slice(-6) : '—';
+              return (
+                <div
+                  key={flag._id}
+                  onClick={() => subj?.detailPath && navigate(subj.detailPath)}
+                  className={`flex items-center gap-3 p-3 rounded-xl bg-white border border-red-100 transition-colors ${subj?.detailPath ? 'cursor-pointer hover:border-red-300 hover:bg-red-50/40' : ''}`}
+                >
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${flag.chatType === 'student' ? 'bg-blue-100 text-blue-700' : 'bg-primary-100 text-primary-700'}`}>
+                    {subj?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold text-gray-900 truncate">
+                        {subj?.name || 'Unknown'}
+                      </span>
+                      <span className="text-[11px] font-mono text-gray-400">#{idShort}</span>
+                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${flag.chatType === 'student' ? 'bg-blue-50 text-blue-600' : 'bg-primary-50 text-primary-600'}`}>
+                        {flag.chatType}
+                      </span>
+                      {subj?.meta && <span className="text-[11px] text-gray-400">{subj.meta}</span>}
+                    </div>
+                    <p className="text-xs text-red-600/90 truncate mt-0.5">
+                      {(flag.keywords && flag.keywords.length > 0)
+                        ? `Keywords: ${flag.keywords.join(', ')}`
+                        : (flag.reason || 'Flagged for review')}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400 whitespace-nowrap flex-shrink-0">
+                    {formatTimeAgo(flag.createdAt)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      )}
 
       {/* Primary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">

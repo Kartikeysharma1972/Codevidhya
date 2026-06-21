@@ -24,7 +24,9 @@ const TONES = [
   { value: 'professional', label: '💼 Professional' },
 ]
 
-const GRADES = ['Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12']
+// DEMO MODE: only Grade 2, 6 and 10. Full list kept below (commented) for later restore.
+// const GRADES = ['Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12']
+const GRADES = ['Grade 2','Grade 6','Grade 10']
 
 function StarRating({ value, onChange }) {
   const [hover, setHover] = useState(0)

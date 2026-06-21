@@ -421,6 +421,12 @@ MATH RENDERING (LaTeX):
   - Block: $$\\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$$
 - Use LaTeX for fractions, roots, powers, subscripts, Greek letters, chemical formulas etc.
 - Chemical equations: $\\text{Zn} + \\text{CuSO}_4 \\rightarrow \\text{ZnSO}_4 + \\text{Cu}$
+
+OUTPUT FORMATTING (STRICT):
+- Do NOT use ANY emojis, icons, or decorative symbols anywhere in the response. Keep it clean and professional.
+- When you compare things, list properties, or present structured data (differences, classifications, formulas-with-meanings, timelines, pros/cons), use a proper GitHub-flavored Markdown table: a header row, a separator row of dashes (| --- | --- |), then one row per item. Keep every cell in the column mapped to that column's heading.
+- Use a table ONLY when it genuinely makes the information clearer — never force ordinary prose or a single fact into a table.
+- Always close every math expression you open: each $ has a matching $ and each $$ a matching $$, so equations never render as raw text.
 ${buildLanguageDirective(extra.language)}
 `;
 
@@ -509,24 +515,24 @@ MODE: ${mode}
 
 ${mode === 'full' ? `Provide a COMPREHENSIVE summary structured EXACTLY like this:
 
-## 📌 Overview
+## Overview
 2-3 sentences capturing what the document is about and its core idea.
 
-## 🔑 Main Sections
+## Main Sections
 For each major section/topic in the document, provide:
 - **Section name** — 2-3 sentence summary of what it covers.
 
-## 💡 Key Concepts & Terms
+## Key Concepts & Terms
 Bullet list of important terms, formulas, definitions, or facts to remember.
 
-## ✅ Takeaways
+## Takeaways
 3-5 crisp bullet points — what a student should remember after reading.
 
-If the document is exam-relevant, end with a "📝 Likely Exam Points" section listing 3-4 questions that could come from this material.` : ''}
+If the document is exam-relevant, end with a "## Likely Exam Points" section listing 3-4 questions that could come from this material.` : ''}
 
 ${mode === 'key-points' ? `Extract the most important points as a clean, scannable list structured EXACTLY like this:
 
-## ⭐ Top Key Points
+## Top Key Points
 Numbered list (1, 2, 3...) — at most 10 points, each one short and self-contained (no full paragraphs).
 Group related points under bold subheadings where helpful.
 Include any formulas, dates, definitions, or numbers exactly as in the source.` : ''}
@@ -534,13 +540,13 @@ Include any formulas, dates, definitions, or numbers exactly as in the source.` 
 ${mode === 'search' ? `Answer this specific question from the document: "${extra.query || ''}"
 
 Structure your answer like this:
-## 🎯 Direct Answer
+## Direct Answer
 1-3 sentences directly answering the question.
 
-## 📖 Supporting Detail
+## Supporting Detail
 Quote or paraphrase the relevant portion(s) of the document that justify the answer.
 
-## 🔗 Related Points
+## Related Points
 Optional — if there's tangentially relevant info in the document that helps the student understand the topic better, list 2-3 bullets.
 
 If the document does NOT contain enough information to answer, say so plainly — DO NOT invent facts.` : ''}
@@ -689,7 +695,7 @@ IMPORTANT:
     // a "Key Points & Findings" section reads far more naturally.
     const isFormulaSubject = /(math|physic|chemis|accountan|statistic)/.test(subjLower)
       || (subjLower.includes('science') && !subjLower.includes('social') && !subjLower.includes('computer'));
-    const keyHeading = isFormulaSubject ? '## 📐 Key Formulas & Definitions' : '## 🔑 Key Points & Findings';
+    const keyHeading = isFormulaSubject ? '## Key Formulas & Definitions' : '## Key Points & Findings';
     const keyGuidance = isFormulaSubject
       ? (grade >= 6
           ? 'List every important formula, theorem, equation, and definition — one per bullet. Show formulas in LaTeX and briefly say what each symbol means.'
@@ -712,13 +718,13 @@ ${hasTopic
 
 Produce the study material using EXACTLY these five sections, in this order, with these exact headings:
 
-## 📚 Complete Concept Explanation
+## Complete Concept Explanation
 Full, well-structured explanation of ${studyTarget} calibrated to Class ${grade} level. ${hasTopic ? 'Cover all subtopics relevant to this topic.' : 'Cover every major subtopic in the chapter, in a logical order.'} Use subheadings (###), short paragraphs, **bold** for key terms, and tables where they make a comparison clearer.
 
 ${keyHeading}
 ${keyGuidance}
 
-## 🗺️ Mind Map
+## Mind Map
 Output the mind map as a STRICT nested bullet list — it is parsed by a visual diagram renderer, so follow this format EXACTLY:
 - Start with ONE root bullet: the central idea (the chapter/topic name).
 - Indent each deeper level by exactly 2 more spaces. Go up to 3 levels deep.
@@ -735,14 +741,14 @@ Follow this shape exactly:
   - Third main branch
     - key sub-point
 
-## 📝 Frequently Asked Exam Questions
+## Frequently Asked Exam Questions
 Give ${hasTopic ? '5-6' : '8-10'} high-yield questions that commonly appear in CBSE exams on ${hasTopic ? 'this topic' : 'this chapter'}. Format EACH one EXACTLY like this (keep the blank line between questions):
 
 **Q1. <the question>**
-🏷️ *<marks & type, e.g. "3 Marks · Short Answer">*
+*<marks & type, e.g. "3 Marks · Short Answer">*
 > <a crisp, well-structured model answer — use **bold** key terms and short bullet points inside the answer where it helps>
 
-## ✍️ Practice Questions
+## Practice Questions
 Give ${hasTopic ? '5-6' : '8-10'} practice questions for self-testing. The answer is HIDDEN until the student taps "Reveal", so NEVER show the answer inside the question. Format EACH one EXACTLY like this, each on its own line:
 
 Q: <the question>

@@ -4,13 +4,16 @@
 import cbseTOC from './cbseTOC.json'
 
 // Grades supported in the lesson plan generator.
-export const GRADES = [
+// DEMO MODE: only Grade 2, 6 and 10 are exposed for now. The full list is kept
+// below (commented) — uncomment ALL_GRADES and use it again to restore everything.
+const ALL_GRADES = [
   'Kindergarten',
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5',
   'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10',
   'Grade 11', 'Grade 12',
   'College',
 ]
+export const GRADES = ['Grade 2', 'Grade 6', 'Grade 10']
 
 // ──────────────────────────────────────────────────────────────────
 // Miscellaneous (non-core) subjects offered per grade band.

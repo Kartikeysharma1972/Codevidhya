@@ -70,9 +70,21 @@ router.get('/flagged', async (req, res) => {
       if (flag.chatType === 'teacher' && db) {
         try {
           const chat = db.prepare(
-            'SELECT id, teacher_id, tool_name, topic, grade_level, subject, created_at FROM chat_history WHERE id = ?'
+            `SELECT ch.id, ch.teacher_id, ch.tool_name, ch.topic, ch.grade_level, ch.subject, ch.created_at,
+                    u.name AS teacher_name, u.email AS teacher_email, u.school_name
+             FROM chat_history ch
+             LEFT JOIN users u ON ch.teacher_id = CAST(u.id AS TEXT)
+             WHERE ch.id = ?`
           ).get(flag.chatId);
           enriched.chatData = chat || null;
+          enriched.subject = chat ? {
+            type: 'teacher',
+            id: chat.teacher_id,
+            name: chat.teacher_name || 'Unknown teacher',
+            email: chat.teacher_email || null,
+            meta: chat.school_name || null,
+            detailPath: `/teachers/${chat.teacher_id}`,
+          } : null;
         } catch (sqlErr) {
           enriched.chatData = null;
         }
@@ -104,14 +116,25 @@ router.get('/flagged', async (req, res) => {
                 _id: 1,
                 title: 1,
                 tool: 1,
+                'user._id': 1,
                 'user.name': 1,
                 'user.email': 1,
+                'user.grade': 1,
                 createdAt: 1,
               },
             },
           ]).toArray();
 
-          enriched.chatData = session[0] || null;
+          const s = session[0] || null;
+          enriched.chatData = s;
+          enriched.subject = s && s.user ? {
+            type: 'student',
+            id: s.user._id ? s.user._id.toString() : null,
+            name: s.user.name || 'Unknown student',
+            email: s.user.email || null,
+            meta: s.user.grade != null ? `Grade ${s.user.grade}` : null,
+            detailPath: s.user._id ? `/students/${s.user._id.toString()}` : null,
+          } : null;
         } catch {
           enriched.chatData = null;
         }
@@ -194,80 +217,81 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// Risk keywords scanned in student conversations. Word-boundary matched so
+// "class" doesn't trip "ass", etc.
+const RISK_KEYWORDS = [
+  'hate', 'kill', 'die', 'suicide', 'self harm', 'self-harm', 'cutting',
+  'weapon', 'gun', 'knife', 'bomb', 'drugs', 'alcohol', 'cigarette',
+  'bully', 'bullied', 'bullying', 'threat', 'hurt', 'abuse', 'abused',
+  'depressed', 'depression', 'anxiety', 'worthless', 'hopeless', 'run away',
+];
+
+function matchKeywords(text) {
+  const lower = (text || '').toLowerCase();
+  const found = new Set();
+  for (const kw of RISK_KEYWORDS) {
+    const re = new RegExp(`(^|[^a-z])${kw.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}([^a-z]|$)`, 'i');
+    if (re.test(lower)) found.add(kw);
+  }
+  return found;
+}
+
+// Scans recent student conversations for risk keywords and creates pending
+// FlaggedChat records. Reusable by the manual route and the periodic auto-scan.
+async function scanForRiskyChats({ hoursBack = 24 } = {}) {
+  const mongodb = getMongoDB();
+  if (!mongodb) return { new_flags: 0, message: 'Student database not available' };
+
+  const sessionsCol = mongodb.collection('sessions');
+  const since = new Date(Date.now() - hoursBack * 60 * 60 * 1000);
+
+  const recentSessions = await sessionsCol.find(
+    { updatedAt: { $gte: since }, messages: { $exists: true, $ne: [] } },
+    { projection: { _id: 1, messages: 1 } }
+  ).toArray();
+
+  const existingFlags = await FlaggedChat.find(
+    { chatType: 'student', autoFlagged: true },
+    { chatId: 1 }
+  ).lean();
+  const existingFlagIds = new Set(existingFlags.map(f => f.chatId));
+
+  const flagsToCreate = [];
+  for (const session of recentSessions) {
+    const sessionIdStr = session._id.toString();
+    if (existingFlagIds.has(sessionIdStr)) continue;
+
+    const foundKeywords = new Set();
+    if (Array.isArray(session.messages)) {
+      for (const msg of session.messages) {
+        // Only student-authored messages matter for risk detection.
+        if (msg.role && msg.role !== 'user') continue;
+        for (const kw of matchKeywords(msg.content || msg.text || '')) foundKeywords.add(kw);
+      }
+    }
+
+    if (foundKeywords.size > 0) {
+      flagsToCreate.push({
+        chatType: 'student',
+        chatId: sessionIdStr,
+        reason: 'Auto-flagged: contains risk keywords: ' + Array.from(foundKeywords).join(', '),
+        autoFlagged: true,
+        keywords: Array.from(foundKeywords),
+        status: 'pending',
+        createdAt: new Date(),
+      });
+    }
+  }
+
+  if (flagsToCreate.length > 0) await FlaggedChat.insertMany(flagsToCreate);
+  return { new_flags: flagsToCreate.length };
+}
+
 // POST /api/moderation/scan - Scan recent student chats for keywords
 router.post('/scan', async (req, res) => {
   try {
-    const mongodb = getMongoDB();
-    if (!mongodb) {
-      return res.json({ new_flags: 0, message: 'Student database not available' });
-    }
-
-    const sessionsCol = mongodb.collection('sessions');
-
-    const keywords = ['hate', 'kill', 'die', 'suicide', 'weapon', 'gun', 'drugs', 'bully', 'threat', 'hurt', 'abuse'];
-
-    // Only scan last 24 hours
-    const oneDayAgo = new Date();
-    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
-
-    // Get sessions from last 24 hours that have messages
-    const recentSessions = await sessionsCol.find(
-      {
-        updatedAt: { $gte: oneDayAgo },
-        messages: { $exists: true, $ne: [] },
-      },
-      { projection: { _id: 1, messages: 1 } }
-    ).toArray();
-
-    // Get already flagged chat IDs to avoid re-flagging
-    const existingFlags = await FlaggedChat.find(
-      { chatType: 'student', autoFlagged: true },
-      { chatId: 1 }
-    ).lean();
-    const existingFlagIds = new Set(existingFlags.map(f => f.chatId));
-
-    let newFlagCount = 0;
-    const flagsToCreate = [];
-
-    for (const session of recentSessions) {
-      const sessionIdStr = session._id.toString();
-
-      if (existingFlagIds.has(sessionIdStr)) {
-        continue;
-      }
-
-      // Check each message for keywords
-      const foundKeywords = new Set();
-      if (Array.isArray(session.messages)) {
-        for (const msg of session.messages) {
-          const content = (msg.content || msg.text || '').toLowerCase();
-          for (const keyword of keywords) {
-            if (content.includes(keyword)) {
-              foundKeywords.add(keyword);
-            }
-          }
-        }
-      }
-
-      if (foundKeywords.size > 0) {
-        flagsToCreate.push({
-          chatType: 'student',
-          chatId: sessionIdStr,
-          reason: 'Auto-flagged: contains keywords: ' + Array.from(foundKeywords).join(', '),
-          autoFlagged: true,
-          keywords: Array.from(foundKeywords),
-          status: 'pending',
-          createdAt: new Date(),
-        });
-        newFlagCount++;
-      }
-    }
-
-    if (flagsToCreate.length > 0) {
-      await FlaggedChat.insertMany(flagsToCreate);
-    }
-
-    res.json({ new_flags: newFlagCount });
+    const result = await scanForRiskyChats({ hoursBack: 24 });
+    res.json(result);
   } catch (err) {
     console.error('Scan error:', err);
     res.status(500).json({ error: 'Failed to scan chats' });
@@ -275,3 +299,4 @@ router.post('/scan', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.scanForRiskyChats = scanForRiskyChats;

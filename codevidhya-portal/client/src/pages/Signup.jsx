@@ -20,7 +20,9 @@ const ordinal = (n) => {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
 
-const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+// DEMO MODE: only classes 2, 6 and 10. Restore full list with:
+// const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+const GRADES = [2, 6, 10];
 
 function passwordCheck(pw) {
   return {
@@ -151,7 +153,7 @@ export default function Signup() {
                     value={grade} onChange={(e) => setGrade(e.target.value)} required
                     className="cv-input appearance-none cursor-pointer"
                   >
-                    <option value="" disabled>Select your class (1 to 12)</option>
+                    <option value="" disabled>Select your class</option>
                     {GRADES.map((g) => (
                       <option key={g} value={g}>{ordinal(g)} Grade</option>
                     ))}

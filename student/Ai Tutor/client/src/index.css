@@ -245,30 +245,146 @@ body {
   }
 }
 
-/* Chat message markdown */
-.chat-markdown h1, .chat-markdown h2, .chat-markdown h3 {
-  @apply font-semibold mt-3 mb-1;
+/* ============================================================
+   Chat / study-notes markdown — polished "notebook" styling.
+   Used by ConceptExplainer, MockTest, DocumentSummarizer,
+   FocusArea, ProjectGenerator and TestResult via <ChatMarkdown>.
+   ============================================================ */
+.chat-markdown {
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #334155;            /* slate-700 body */
+  word-break: break-word;
 }
-.chat-markdown p {
-  @apply mb-2;
+.chat-markdown > *:first-child { margin-top: 0; }
+.chat-markdown > *:last-child  { margin-bottom: 0; }
+
+/* ── Headings — clear, bold hierarchy ─────────────────────── */
+.chat-markdown h1 {
+  font-family: 'Nunito', 'Inter', system-ui, sans-serif;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0E2F44;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin: 1.4rem 0 0.8rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #B3D9F2;
 }
-.chat-markdown ul, .chat-markdown ol {
-  @apply ml-4 mb-2;
+.chat-markdown h2 {
+  font-family: 'Nunito', 'Inter', system-ui, sans-serif;
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: #154360;
+  letter-spacing: -0.01em;
+  line-height: 1.35;
+  margin: 1.4rem 0 0.6rem;
+  padding-left: 0.7rem;
+  border-left: 4px solid #2E86C1;
 }
-.chat-markdown li {
-  @apply mb-1;
+.chat-markdown h3 {
+  font-family: 'Nunito', 'Inter', system-ui, sans-serif;
+  font-size: 1.04rem;
+  font-weight: 800;
+  color: #2471A3;
+  margin: 1.1rem 0 0.45rem;
 }
+.chat-markdown h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1A5276;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin: 0.9rem 0 0.4rem;
+}
+.chat-markdown p { margin: 0 0 0.7rem; }
+
+/* Bold stands out (esp. inline key terms) */
+.chat-markdown strong { font-weight: 700; color: #0F2A3D; }
+.chat-markdown em { color: #2471A3; }
+
+/* ── Lists — tidy custom markers ──────────────────────────── */
+.chat-markdown ul, .chat-markdown ol { margin: 0 0 0.8rem; padding-left: 1.5rem; }
+.chat-markdown li { margin-bottom: 0.35rem; padding-left: 0.2rem; }
+.chat-markdown ul > li::marker { color: #2E86C1; }
+.chat-markdown ol > li::marker { color: #2471A3; font-weight: 700; }
+.chat-markdown li > ul, .chat-markdown li > ol { margin: 0.35rem 0 0.2rem; }
+
+/* ── Inline code & code blocks ────────────────────────────── */
 .chat-markdown code {
-  @apply bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono;
+  background: #EAF4FB;
+  color: #1A5276;
+  padding: 0.12rem 0.4rem;
+  border-radius: 0.35rem;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  border: 1px solid #D6EEF8;
 }
 .chat-markdown pre {
-  @apply bg-gray-900 text-gray-100 p-3 rounded-lg mb-2 overflow-x-auto;
+  background: #0E2F44;
+  color: #E2E8F0;
+  padding: 0.9rem 1rem;
+  border-radius: 0.75rem;
+  margin: 0 0 0.9rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
 }
-.chat-markdown pre code {
-  @apply bg-transparent text-inherit p-0;
-}
+.chat-markdown pre code { background: transparent; border: none; color: inherit; padding: 0; }
+
+/* ── Blockquote → soft callout card ───────────────────────── */
 .chat-markdown blockquote {
-  @apply border-l-4 border-primary-300 pl-3 italic text-gray-600 mb-2;
+  margin: 0 0 0.9rem;
+  padding: 0.7rem 1rem;
+  background: #EAF4FB;
+  border-left: 4px solid #5BA4CF;
+  border-radius: 0 0.6rem 0.6rem 0;
+  color: #1A5276;
+  font-style: normal;
+}
+.chat-markdown blockquote p:last-child { margin-bottom: 0; }
+
+/* ── Tables — clean, bordered ─────────────────────────────── */
+.chat-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  border: 1px solid #D6EEF8;
+  border-radius: 0.6rem;
+  overflow: hidden;
+}
+.chat-markdown thead th {
+  background: #EAF4FB;
+  color: #154360;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.55rem 0.8rem;
+  border-bottom: 2px solid #B3D9F2;
+}
+.chat-markdown tbody td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #EEF4F9; color: #334155; }
+.chat-markdown tbody tr:nth-child(even) { background: #F8FBFD; }
+.chat-markdown tbody tr:last-child td { border-bottom: none; }
+
+/* ── Horizontal rule ──────────────────────────────────────── */
+.chat-markdown hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #B3D9F2, transparent);
+  margin: 1.3rem 0;
+}
+
+/* ── Math (KaTeX) — display blocks read like equation cards ── */
+.chat-markdown .katex { font-size: 1.05em; }
+.chat-markdown .katex-display {
+  margin: 0.9rem 0;
+  padding: 0.7rem 0.5rem;
+  background: #F4FAFE;
+  border: 1px solid #D6EEF8;
+  border-radius: 0.6rem;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 /* Project Ideas Generator — clean, professional, emoji-free layout.

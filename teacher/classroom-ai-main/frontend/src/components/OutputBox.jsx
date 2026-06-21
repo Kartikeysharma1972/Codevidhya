@@ -1,4 +1,22 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
+import katex from 'katex'
+import 'katex/dist/katex.min.css'
+
+// Pictographic emojis/symbols to strip from output — keeps arrows (→), math
+// operators, bullets and dashes intact so equations and mappings are unharmed.
+const EMOJI_RE = /([\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}])[ \t]*/gu
+function stripEmojis(s) { return s ? s.replace(EMOJI_RE, '') : s }
+
+// ── MATH (KaTeX) ──────────────────────────────────────
+// Renders a LaTeX string to HTML. Never throws — on a parse error we fall back
+// to the raw source so the output is never blanked out.
+function katexHtml(tex, display) {
+  try {
+    return katex.renderToString(tex, { displayMode: display, throwOnError: false, output: 'html' })
+  } catch {
+    return null
+  }
+}
 
 export function useToast() {
   const [toast, setToast] = useState({ msg: '', show: false })
@@ -483,8 +501,11 @@ export function RichTextToolbar({ editorRef, onSave, onCancel }) {
   )
 }
 
-// ── INLINE RENDERER ───────────────────────────────────
-function InlineLine({ text, color }) {
+// ── INLINE RENDERER (bold / italic / LaTeX math) ──────
+// Renders **bold**, *italic*, and inline/display LaTeX: $..$, $$..$$,
+// \( .. \) and \[ .. \]. Bold/italic are only parsed in the non-math gaps so a
+// dollar amount or formula is never mangled.
+function renderBoldItalic(text, color, keyBase) {
   const parts = []
   const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g
   let last = 0, m
@@ -495,15 +516,46 @@ function InlineLine({ text, color }) {
     last = m.index + m[0].length
   }
   if (last < text.length) parts.push({ type: 'text', val: text.slice(last) })
-  return (
-    <>
-      {parts.map((p, i) =>
-        p.type === 'bold'   ? <strong key={i} style={{ color: '#0a0a0a', fontWeight: 700 }}>{p.val}</strong> :
-        p.type === 'italic' ? <em key={i} style={{ color: color || '#2563eb', fontStyle: 'italic' }}>{p.val}</em> :
-        <span key={i}>{p.val}</span>
-      )}
-    </>
+  return parts.map((p, i) =>
+    p.type === 'bold'   ? <strong key={`${keyBase}-${i}`} style={{ color: '#0a0a0a', fontWeight: 700 }}>{p.val}</strong> :
+    p.type === 'italic' ? <em key={`${keyBase}-${i}`} style={{ color: color || '#2563eb', fontStyle: 'italic' }}>{p.val}</em> :
+    <span key={`${keyBase}-${i}`}>{p.val}</span>
   )
+}
+
+// Inline $..$ requires non-space right inside the delimiters so plain currency
+// ("$5 and $10") is not swallowed as a formula.
+const MATH_RE = /(\$\$[\s\S]+?\$\$|\\\[[\s\S]+?\\\]|\$(?!\s)[^$\n]*?(?<!\s)\$|\\\([\s\S]+?\\\))/g
+
+function InlineLine({ text, color }) {
+  if (!text) return null
+  const nodes = []
+  let last = 0, m, idx = 0
+  while ((m = MATH_RE.exec(text)) !== null) {
+    if (m.index > last) nodes.push(...renderBoldItalic(text.slice(last, m.index), color, `t${idx}`))
+    const raw = m[0]
+    let tex = raw, display = false
+    if (raw.startsWith('$$')) { tex = raw.slice(2, -2); display = true }
+    else if (raw.startsWith('\\[')) { tex = raw.slice(2, -2); display = true }
+    else if (raw.startsWith('\\(')) { tex = raw.slice(2, -2) }
+    else { tex = raw.slice(1, -1) }
+    const html = katexHtml(tex.trim(), display)
+    if (html) {
+      nodes.push(
+        <span
+          key={`m${idx}`}
+          style={display ? { display: 'block', textAlign: 'center', margin: '10px 0', overflowX: 'auto' } : { whiteSpace: 'nowrap' }}
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+      )
+    } else {
+      nodes.push(<span key={`m${idx}`}>{raw}</span>)
+    }
+    last = m.index + raw.length
+    idx++
+  }
+  if (last < text.length) nodes.push(...renderBoldItalic(text.slice(last), color, `t${idx}`))
+  return <>{nodes}</>
 }
 
 function isHeaderFillLine(line) {
@@ -571,7 +623,7 @@ function RenderedOutput({ text }) {
   if (tableBuffer.length > 0) renderBlocks.push({ type: 'table', rows: [...tableBuffer] })
 
   return (
-    <div style={{ fontFamily: 'var(--font, "Inter", system-ui, sans-serif)', fontSize: '0.88rem', lineHeight: 1.85, color: '#2563eb' }}>
+    <div style={{ fontFamily: 'var(--font, "Inter", system-ui, sans-serif)', fontSize: '0.92rem', lineHeight: 1.8, color: '#334155' }}>
       {headerFills.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 8, marginBottom: 24, paddingBottom: 16, borderBottom: '2px solid #e5e7eb' }}>
           {headerFills.map(label => (
@@ -599,8 +651,12 @@ function RenderedOutput({ text }) {
               }}>
                 <span style={{
                   width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-                  background: '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16,
-                }}>🔑</span>
+                  background: '#fde68a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#92400e',
+                }}>
+                  <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2"/><path d="m17 6 3 3"/><path d="m14 9 2.5 2.5"/>
+                  </svg>
+                </span>
                 <span style={{ fontWeight: 800, fontSize: '1.02rem', color: '#92400e', letterSpacing: '-0.2px' }}>
                   <InlineLine text={b.text} color="#92400e" />
                 </span>
@@ -612,15 +668,23 @@ function RenderedOutput({ text }) {
               </div>
             )
           }
+          const isH3 = b.level === 3
           return (
             <div key={i} style={{
-              fontWeight: 800, fontSize: isH1 ? '1.25rem' : isH2 ? '1.08rem' : b.level === 3 ? '0.96rem' : '0.9rem',
-              color: '#0a0a0a', marginTop: isH1 ? 28 : isH2 ? 22 : 16, marginBottom: isH1 || isH2 ? 8 : 5,
-              paddingBottom: isH1 || isH2 ? 8 : 0, borderBottom: isH1 ? '2.5px solid #2563eb' : isH2 ? '1.5px solid #bfdbfe' : 'none',
-              letterSpacing: isH1 ? '-0.3px' : '-0.1px', lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 8,
+              fontWeight: 800,
+              fontSize: isH1 ? '1.32rem' : isH2 ? '1.12rem' : isH3 ? '1rem' : '0.9rem',
+              color: isH1 ? '#0f172a' : isH2 ? '#1e293b' : isH3 ? '#1d4ed8' : '#334155',
+              textTransform: b.level === 4 ? 'uppercase' : 'none',
+              marginTop: isH1 ? 28 : isH2 ? 24 : 16, marginBottom: isH1 || isH2 ? 10 : 5,
+              paddingBottom: isH1 || isH2 ? 8 : 0,
+              paddingLeft: isH2 ? 10 : 0,
+              borderBottom: isH1 ? '2.5px solid #2563eb' : 'none',
+              borderLeft: isH2 ? '4px solid #2563eb' : 'none',
+              letterSpacing: isH1 ? '-0.4px' : b.level === 4 ? '0.4px' : '-0.1px',
+              lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 9,
             }}>
-              {isH1 && <span style={{ width: 4, height: 20, background: '#2563eb', borderRadius: 2, flexShrink: 0 }} />}
-              <InlineLine text={b.text} color="#0a0a0a" />
+              {isH1 && <span style={{ width: 5, height: 22, background: '#2563eb', borderRadius: 3, flexShrink: 0 }} />}
+              <InlineLine text={b.text} color={isH1 ? '#0f172a' : '#1e293b'} />
             </div>
           )
         }
@@ -675,6 +739,10 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
   const editRef = useRef(null)
   const timer = useRef()
 
+  // Emoji-free copy of the output — used for display, copy and downloads so the
+  // generated content stays clean and professional everywhere.
+  const cleanResult = stripEmojis(result)
+
   const showToast = (msg) => {
     clearTimeout(timer.current)
     setToastState({ msg, show: true })
@@ -688,19 +756,19 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
   }, [result])
 
   const handleCopy = async () => {
-    const text = editing ? getEditMarkdown() : result
+    const text = editing ? getEditMarkdown() : cleanResult
     try { await navigator.clipboard.writeText(text); showToast('Copied to clipboard!') }
     catch { showToast('Could not copy') }
   }
 
   const handleDownloadTxt = () => {
-    const text = editing ? getEditMarkdown() : result
+    const text = editing ? getEditMarkdown() : cleanResult
     downloadTxt(text, `${toolName.replace(/\s+/g, '-')}.txt`)
     showToast('Downloaded as TXT!')
   }
 
   const handleDownloadPDF = () => {
-    const text = editing ? getEditMarkdown() : result
+    const text = editing ? getEditMarkdown() : cleanResult
     setPdfLoading(true)
     showToast('Preparing PDF...')
     setTimeout(() => {
@@ -714,7 +782,7 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
     setEditing(true)
     setTimeout(() => {
       if (editRef.current) {
-        editRef.current.innerHTML = markdownToHtml(result)
+        editRef.current.innerHTML = markdownToHtml(cleanResult)
         editRef.current.focus()
       }
     }, 50)
@@ -773,7 +841,7 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
                   Copy
                 </button>
                 {splitAnswerKey ? (
-                  <DownloadMenu getText={() => result} toolName={toolName} showToast={showToast} />
+                  <DownloadMenu getText={() => cleanResult} toolName={toolName} showToast={showToast} />
                 ) : (
                   <>
                     <button className="btn btn-ghost" onClick={handleDownloadTxt} style={{ padding: '6px 12px', fontSize: 12, color: '#16a34a', borderColor: '#bbf7d0' }}>
@@ -851,7 +919,7 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
           )}
           {result && !loading && !editing && (
             <div style={{ animation: 'fadeUp 0.4s ease' }}>
-              <RenderedOutput text={result} />
+              <RenderedOutput text={cleanResult} />
             </div>
           )}
           {editing && (

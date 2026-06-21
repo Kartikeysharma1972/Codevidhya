@@ -31,9 +31,27 @@ app.use('/api/chats', require('./routes/chats'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/alerts', require('./routes/alerts'));
 app.use('/api/export', require('./routes/export'));
-app.use('/api/moderation', require('./routes/moderation'));
+const moderationRouter = require('./routes/moderation');
+app.use('/api/moderation', moderationRouter);
 app.use('/api/management', require('./routes/management'));
 app.use('/api/online', require('./routes/online'));
+
+// ─── Real-time risk detection ───────────────────────────────────────────────
+// Continuously scan recent student conversations for risk keywords so flagged
+// chats surface on the admin dashboard without anyone pressing "scan".
+const { scanForRiskyChats } = moderationRouter;
+const SCAN_INTERVAL_MS = 60 * 1000;
+async function runAutoScan() {
+  try {
+    const { new_flags } = await scanForRiskyChats({ hoursBack: 24 });
+    if (new_flags > 0) console.log(`[auto-scan] flagged ${new_flags} new risky conversation(s)`);
+  } catch (err) {
+    console.error('[auto-scan] error:', err.message);
+  }
+}
+// First sweep shortly after boot (give Mongo time to connect), then on a loop.
+setTimeout(runAutoScan, 15000);
+setInterval(runAutoScan, SCAN_INTERVAL_MS);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));

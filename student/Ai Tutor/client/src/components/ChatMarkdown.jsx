@@ -5,6 +5,22 @@ import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
+// Pictographic emojis/symbols to strip from output — keeps arrows (→), math
+// operators, bullets and dashes intact so equations and mappings are unharmed.
+const EMOJI_RE = /([\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0E}\u{FE0F}\u{200D}\u{20E3}])[ \t]*/gu;
+
+// Clean + normalize model output before rendering:
+//  • remove decorative emojis,
+//  • normalize \( \) and \[ \] LaTeX delimiters to $ / $$ so remark-math
+//    (KaTeX) renders them no matter which style the model used.
+function cleanContent(s) {
+  if (!s) return s;
+  return s
+    .replace(EMOJI_RE, '')
+    .replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `\n$$${m.trim()}$$\n`)
+    .replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `$${m.trim()}$`);
+}
+
 function ImageRenderer({ src, alt }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
@@ -43,7 +59,7 @@ export default function ChatMarkdown({ content }) {
           img: ({ src, alt }) => <ImageRenderer src={src} alt={alt} />,
         }}
       >
-        {content}
+        {cleanContent(content)}
       </ReactMarkdown>
     </div>
   );

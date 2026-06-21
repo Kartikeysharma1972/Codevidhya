@@ -82,6 +82,19 @@ print("[DEBUG] All imports complete")
 load_dotenv()
 print("[DEBUG] Creating FastAPI app...")
 
+# Shared output-formatting rules appended to every markdown-generating prompt.
+# Keeps generated content clean (no emojis), renders math correctly (LaTeX),
+# and uses real tables only where they genuinely help.
+MARKDOWN_FORMAT_RULES = (
+    "\nOUTPUT FORMATTING (STRICT):\n"
+    "- Do NOT use any emojis, icons or decorative symbols anywhere.\n"
+    "- When comparing items or presenting structured data, use a proper Markdown table: a header row, a "
+    "separator row of dashes (| --- | --- |), then one row per item, with every cell mapped to its column heading. "
+    "Use a table ONLY when it genuinely makes the information clearer — never force ordinary prose into a table.\n"
+    "- Write ALL math, formulas and equations in LaTeX: $...$ for inline and $$...$$ for a centered display equation, "
+    "so they render correctly. Always close every $ and $$ you open.\n"
+)
+
 app = FastAPI(title="ClassroomAI API")
 
 # Import RAG modules (available after pip install)
@@ -722,6 +735,7 @@ def generate_worksheet(req: WorksheetRequest):
         "- Use numbered lists (1. 2. 3.) for questions\n"
         "- Use bullet points (- ) for lists\n"
         "- Use --- for section dividers\n"
+        + MARKDOWN_FORMAT_RULES
     )
     system_prompt += get_language_directive(req.language)
 
@@ -919,7 +933,9 @@ def generate_lesson_plan(req: LessonPlanRequest):
         "lower grades), output the section header with the note '_Flagged: this section may be skipped — <reason>._' "
         "but DO still include the section header so the teacher sees the structure.\n"
         "- Use **bold** for key terms, numbered lists for steps, - for bullet points, --- between sections.\n"
-        "- For math: plain text (e.g. x^2 + 2x + 1). NO LaTeX $$ or \\(...\\).\n"
+        "- For math, write LaTeX: $...$ for inline and $$...$$ for display equations (e.g. $x^2 + 2x + 1$). Always close every $ and $$.\n"
+        "- When comparing items or tabulating data, use a proper Markdown table (header row + | --- | --- | separator), only where it genuinely helps.\n"
+        "- Do NOT use any emojis, icons or decorative symbols.\n"
         "- Replace every [square-bracket placeholder] with concrete content.\n\n"
         f"{lang_profile}"
         + get_language_directive(req.language)
@@ -995,6 +1011,7 @@ def generate_lesson_plan(req: LessonPlanRequest):
             "You are a subject matter expert. Create a concise teacher quick-reference sheet. "
             f"{lang_profile} "
             "Format with clean markdown: ## for section headers, **bold** for key terms, - for bullet lists."
+            + MARKDOWN_FORMAT_RULES
             + get_language_directive(req.language)
         )
 
@@ -1079,10 +1096,11 @@ def enrich_lesson_plan(req: LessonPlanEnrichRequest):
         "You are a senior NCERT-aligned teacher and curriculum designer. "
         "Extend an existing lesson plan with new, non-overlapping, classroom-ready content.\n\n"
         "OUTPUT FORMAT (STRICT):\n"
-        "- Respond in CLEAN MARKDOWN ONLY. No JSON, no LaTeX delimiters ($$ or \\[...]), no code fences around the whole output, no placeholder brackets.\n"
+        "- Respond in CLEAN MARKDOWN ONLY. No JSON, no code fences around the whole output, no placeholder brackets.\n"
         "- Use ## for section headers, ### for sub-sections, **bold** for key terms, numbered lists for questions, - for bullets.\n"
-        "- For math, write equations inline as plain text (e.g. x = (-b ± √(b²-4ac)) / 2a).\n"
+        "- For math, write LaTeX: $...$ inline and $$...$$ for display (e.g. $x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}$). Always close every $ and $$.\n"
         "- Model all questions and solutions on NCERT textbook style with real numbers and worked steps."
+        + MARKDOWN_FORMAT_RULES
     )
     system_prompt += get_language_directive(req.language)
 
@@ -1163,10 +1181,12 @@ def generate_mc_assessment(req: MCAssessmentRequest):
         "- Never use 'all of the above', 'none of the above', double negatives, or trivially wrong options.\n"
         "- If the curriculum-specific detail is unclear, prioritise logical and real-world accuracy over inventing exam formats.\n\n"
         "OUTPUT FORMAT (STRICT):\n"
-        "- Respond in CLEAN MARKDOWN ONLY. No JSON, no LaTeX delimiters, no leftover [brackets].\n"
+        "- Respond in CLEAN MARKDOWN ONLY. No JSON, no leftover [brackets].\n"
         "- Use # for title, ## for sections, **bold** for key terms, numbered lists for questions, - for bullets.\n"
+        "- For math, write LaTeX: $...$ inline and $$...$$ for display equations. Always close every $ and $$.\n"
         f"{lang_profile} "
         + ("ALL questions must come directly from the provided source material. " if req.source_material.strip() else "")
+        + MARKDOWN_FORMAT_RULES
         + get_language_directive(req.language)
     )
 
@@ -1196,6 +1216,7 @@ def generate_mc_assessment(req: MCAssessmentRequest):
         f"ANSWER KEY: {answer_key_note}\n"
         "For calculation questions, show the working in the answer key.\n\n"
         "Use markdown: # for title, ## for sections, **bold** for important terms, numbered lists for questions."
+        + MARKDOWN_FORMAT_RULES
     )
 
     # Scale token budget with question count — MCQ + 4 distractors + explanation ~ 350-450 tokens.
@@ -1368,6 +1389,7 @@ def generate_class_activity(req: ClassActivityRequest):
         "- Use numbered lists (1. 2. 3.) for steps and procedures\n"
         "- Use bullet points (- ) for materials, outcomes, and reflection questions\n"
         "- Use --- between activities as dividers\n"
+        + MARKDOWN_FORMAT_RULES
     )
     system_prompt += get_language_directive(req.language)
 
@@ -2784,7 +2806,7 @@ def explain_simple(req: ExplainSimpleRequest):
     sys_prompt = (
         "You are a friendly coding mentor for school kids. Explain bugs and fixes "
         "in the simplest possible way, like talking to a 10-year-old. Use short sentences, "
-        "fun analogies, and be encouraging. Use a few emojis for warmth (not too many)."
+        "fun analogies, and be encouraging. Do NOT use any emojis or icons."
     )
     user_prompt = (
         f"A student just had their {req.language} code debugged. "

@@ -286,8 +286,9 @@ export default function AppLayout({ children, activeTool }) {
             >
               <h3 className="font-display font-extrabold text-xl text-gray-900 mb-1">Change Your Class</h3>
               <p className="text-[13px] text-gray-500 mb-5">All responses will recalibrate to the new grade.</p>
-              <div className="grid grid-cols-4 gap-2.5">
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(g => (
+              <div className="grid grid-cols-3 gap-2.5">
+                {/* DEMO MODE: only classes 2, 6 and 10. Restore with Array.from({ length: 12 }, (_, i) => i + 1) */}
+                {[2, 6, 10].map(g => (
                   <button
                     key={g}
                     onClick={() => handleGradeChange(g)}
