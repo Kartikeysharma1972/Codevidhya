@@ -34,6 +34,13 @@ GROQ_MODEL="${GROQ_MODEL:-llama-3.3-70b-versatile}"
 GROQ_API_KEYS="${GROQ_API_KEYS:-${GROQ_API_KEY:-}}"
 GROQ_API_KEY="${GROQ_API_KEY:-${GROQ_API_KEYS%%,*}}"
 
+# Public URLs the BROWSER uses. Blank => plain http://IP:port (IP deployments).
+# For a domain+HTTPS deploy, set *_PUBLIC_URL in secrets.env to https:// hosts.
+PORTAL_PUBLIC_URL="${PORTAL_PUBLIC_URL:-http://${SERVER_IP}}"
+STUDENT_PUBLIC_URL="${STUDENT_PUBLIC_URL:-http://${SERVER_IP}:5000}"
+TEACHER_PUBLIC_URL="${TEACHER_PUBLIC_URL:-http://${SERVER_IP}:8001}"
+ADMIN_PUBLIC_URL="${ADMIN_PUBLIC_URL:-http://${SERVER_IP}:5001}"
+
 echo "==> Deploying Codevidhya for public IP: $SERVER_IP"
 
 # ── pull latest code ─────────────────────────────────────────────────────────
@@ -48,7 +55,7 @@ PORT=4000
 NODE_ENV=production
 JWT_SECRET=${PORTAL_JWT_SECRET}
 MONGODB_URI=${PORTAL_MONGODB_URI}
-CLIENT_URL=http://${SERVER_IP}
+CLIENT_URL=${PORTAL_PUBLIC_URL}
 STUDENT_APP_URL=http://localhost:5000
 TEACHER_APP_URL=http://localhost:8001
 ADMIN_APP_URL=http://localhost:5001
@@ -74,15 +81,17 @@ cat > "$ROOT/teacher/classroom-ai-main/backend/.env" <<EOF
 GROQ_API_KEY=${GROQ_API_KEY}
 GROQ_API_KEYS=${GROQ_API_KEYS}
 GROQ_MODEL=${GROQ_MODEL}
-CORS_ORIGINS=http://${SERVER_IP},http://${SERVER_IP}:8001,http://localhost:5176
+CORS_ORIGINS=${PORTAL_PUBLIC_URL},${TEACHER_PUBLIC_URL},http://${SERVER_IP},http://${SERVER_IP}:8001,http://localhost:5176
 EOF
 
-# portal client build-time vars (where the browser is redirected after login)
+# portal client build-time vars — the public URLs the BROWSER loads each sub-app
+# from, inside an iframe (resolved near the top from *_PUBLIC_URL / SERVER_IP).
 cat > "$ROOT/codevidhya-portal/client/.env.production" <<EOF
-VITE_STUDENT_URL=http://${SERVER_IP}:5000
-VITE_TEACHER_URL=http://${SERVER_IP}:8001
-VITE_ADMIN_URL=http://${SERVER_IP}:5001
+VITE_STUDENT_URL=${STUDENT_PUBLIC_URL}
+VITE_TEACHER_URL=${TEACHER_PUBLIC_URL}
+VITE_ADMIN_URL=${ADMIN_PUBLIC_URL}
 EOF
+echo "    Portal iframe targets: $STUDENT_PUBLIC_URL | $TEACHER_PUBLIC_URL | $ADMIN_PUBLIC_URL"
 
 # ── build: portal ────────────────────────────────────────────────────────────
 echo "==> Building portal"
