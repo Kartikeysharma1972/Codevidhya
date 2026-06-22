@@ -167,7 +167,7 @@ export default function Sidebar() {
             <div style={{
               fontSize: 10.5, color: 'var(--text-3)',
               fontWeight: 500, marginTop: 2, letterSpacing: '0.1px',
-            }}>by CodeVidhya</div>
+            }}>Codevidhya</div>
           </div>
         </div>
       </div>
