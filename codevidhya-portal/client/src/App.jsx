@@ -1,6 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import EmbeddedApp from './pages/EmbeddedApp';
@@ -17,13 +16,13 @@ export default function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes>
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<Navigate to="/signup" replace />} />
         <Route path="/login"  element={<PublicOnly><Login /></PublicOnly>} />
         <Route path="/signup" element={<PublicOnly><Signup /></PublicOnly>} />
         <Route path="/student" element={<EmbeddedApp expected="student" />} />
         <Route path="/teacher" element={<EmbeddedApp expected="teacher" />} />
         <Route path="/admin"   element={<EmbeddedApp expected="admin"   />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/signup" replace />} />
       </Routes>
     </AnimatePresence>
   );
