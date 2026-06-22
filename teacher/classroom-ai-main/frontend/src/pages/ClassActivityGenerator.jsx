@@ -7,7 +7,7 @@ import UsageCounter from '../components/UsageCounter'
 import ErrorToast from '../components/ErrorToast'
 import { useAuth } from '../context/AuthContext'
 import {
-  GRADES, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics,
+  GRADES, GRADE_OPTIONS, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics,
   findTopicDescription,
 } from '../data/cbseSubjects'
 
@@ -340,7 +340,7 @@ export default function ClassActivityGenerator() {
               <CustomSelect value={form.grade_level} onChange={e => onGradeChange(e.target.value)}
                 style={{ borderColor: errors.grade_level ? '#fca5a5' : ACCENT_MID }}>
                 <option value="">— Select Grade —</option>
-                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                {GRADE_OPTIONS.map(o => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
               </CustomSelect>
               <ErrMsg msg={errors.grade_level} />
             </div>

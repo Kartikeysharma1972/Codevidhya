@@ -3,17 +3,26 @@
 
 import cbseTOC from './cbseTOC.json'
 
-// Grades supported in the lesson plan generator.
-// DEMO MODE: only Grade 2, 6 and 10 are exposed for now. The full list is kept
-// below (commented) — uncomment ALL_GRADES and use it again to restore everything.
-const ALL_GRADES = [
+// All grades are SHOWN in the dropdowns for showcase, but during the demo only
+// DEMO_GRADES actually generate output — the rest render disabled ("coming
+// soon"). To open everything up later, just widen DEMO_GRADES (or set it to GRADES).
+export const GRADES = [
   'Kindergarten',
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5',
   'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10',
   'Grade 11', 'Grade 12',
   'College',
 ]
-export const GRADES = ['Grade 2', 'Grade 6', 'Grade 10']
+export const DEMO_GRADES = ['Grade 2', 'Grade 6', 'Grade 10']
+export const isDemoGrade = (g) => DEMO_GRADES.includes(g)
+
+// Option objects for dropdowns: non-demo grades are visible but disabled, with
+// a "coming soon" hint so the platform looks complete during showcase.
+export const GRADE_OPTIONS = GRADES.map(g => ({
+  value: g,
+  label: isDemoGrade(g) ? g : `${g} — coming soon`,
+  disabled: !isDemoGrade(g),
+}))
 
 // ──────────────────────────────────────────────────────────────────
 // Miscellaneous (non-core) subjects offered per grade band.

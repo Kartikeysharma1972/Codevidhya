@@ -20,9 +20,10 @@ const ordinal = (n) => {
   return n + (s[(v - 20) % 10] || s[v] || s[0]);
 };
 
-// DEMO MODE: only classes 2, 6 and 10. Restore full list with:
-// const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
-const GRADES = [2, 6, 10];
+// DEMO MODE: all classes shown for showcase, only DEMO_CLASSES are selectable
+// (others appear disabled / "coming soon"). Widen DEMO_CLASSES to open up later.
+const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
+const DEMO_CLASSES = [2, 6, 10];
 
 function passwordCheck(pw) {
   return {
@@ -154,9 +155,14 @@ export default function Signup() {
                     className="cv-input appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Select your class</option>
-                    {GRADES.map((g) => (
-                      <option key={g} value={g}>{ordinal(g)} Grade</option>
-                    ))}
+                    {GRADES.map((g) => {
+                      const enabled = DEMO_CLASSES.includes(g);
+                      return (
+                        <option key={g} value={g} disabled={!enabled}>
+                          {ordinal(g)} Grade{enabled ? '' : ' — coming soon'}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </motion.div>

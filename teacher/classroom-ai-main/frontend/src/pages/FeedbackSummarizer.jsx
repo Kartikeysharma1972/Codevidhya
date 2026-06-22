@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { LANGUAGES } from '../data/languages'
+import { GRADE_OPTIONS } from '../data/cbseSubjects'
 
 const API = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin
 const STORAGE_KEY = 'classroom-result-feedback'
@@ -24,9 +25,6 @@ const TONES = [
   { value: 'professional', label: '💼 Professional' },
 ]
 
-// DEMO MODE: only Grade 2, 6 and 10. Full list kept below (commented) for later restore.
-// const GRADES = ['Kindergarten','Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9','Grade 10','Grade 11','Grade 12']
-const GRADES = ['Grade 2','Grade 6','Grade 10']
 
 function StarRating({ value, onChange }) {
   const [hover, setHover] = useState(0)
@@ -227,7 +225,7 @@ export default function FeedbackSummarizer() {
             <Field label="🎓 Grade Level" required>
               <select value={gradeLevel} onChange={e => setGradeLevel(e.target.value)} style={inputStyle}>
                 <option value="">Select grade...</option>
-                {GRADES.map(g => <option key={g} value={g}>{g}</option>)}
+                {GRADE_OPTIONS.map(o => <option key={o.value} value={o.value} disabled={o.disabled}>{o.label}</option>)}
               </select>
             </Field>
 

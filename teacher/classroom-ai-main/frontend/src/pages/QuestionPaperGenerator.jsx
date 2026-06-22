@@ -3,7 +3,7 @@ import ChatHistory from '../components/ChatHistory'
 import UsageCounter from '../components/UsageCounter'
 import { RichTextToolbar } from '../components/OutputBox'
 import { useAuth } from '../context/AuthContext'
-import { GRADES, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics, findTopicDescription } from '../data/cbseSubjects'
+import { GRADES, GRADE_OPTIONS, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics, findTopicDescription } from '../data/cbseSubjects'
 import { LANGUAGES } from '../data/languages'
 
 const API = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin
@@ -40,11 +40,14 @@ function SelectDown({ value, onChange, options, placeholder }) {
           boxShadow: '0 8px 28px rgba(0,0,0,0.18)' }}>
           {options.map((opt) => {
             const v = opt.value ?? opt; const l = opt.label ?? opt; const active = v === value
+            const disabled = !!opt.disabled
             return (
-              <li key={v} onMouseDown={() => { onChange(v); setOpen(false) }}
-                style={{ padding: '9px 14px', cursor: 'pointer', fontSize: '0.9rem',
-                  color: active ? 'var(--accent)' : 'var(--text-1)',
-                  background: active ? 'var(--accent-soft)' : 'transparent', fontWeight: active ? 600 : 400 }}>{l}</li>
+              <li key={v}
+                onMouseDown={disabled ? undefined : () => { onChange(v); setOpen(false) }}
+                style={{ padding: '9px 14px', cursor: disabled ? 'not-allowed' : 'pointer', fontSize: '0.9rem',
+                  color: disabled ? 'var(--text-3)' : (active ? 'var(--accent)' : 'var(--text-1)'),
+                  background: active && !disabled ? 'var(--accent-soft)' : 'transparent',
+                  fontWeight: active ? 600 : 400, opacity: disabled ? 0.55 : 1 }}>{l}</li>
             )
           })}
         </ul>
@@ -366,7 +369,7 @@ export default function QuestionPaperGenerator() {
 
         <div><Label>Source Track</Label><TrackTabs value={subjectTrack} onChange={setSubjectTrack} /></div>
 
-        <div><Label>Grade Level *</Label><SelectDown value={grade} onChange={setGrade} options={GRADES} /></div>
+        <div><Label>Grade Level *</Label><SelectDown value={grade} onChange={setGrade} options={GRADE_OPTIONS} /></div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>

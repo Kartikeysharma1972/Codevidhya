@@ -286,22 +286,31 @@ export default function AppLayout({ children, activeTool }) {
             >
               <h3 className="font-display font-extrabold text-xl text-gray-900 mb-1">Change Your Class</h3>
               <p className="text-[13px] text-gray-500 mb-5">All responses will recalibrate to the new grade.</p>
-              <div className="grid grid-cols-3 gap-2.5">
-                {/* DEMO MODE: only classes 2, 6 and 10. Restore with Array.from({ length: 12 }, (_, i) => i + 1) */}
-                {[2, 6, 10].map(g => (
-                  <button
-                    key={g}
-                    onClick={() => handleGradeChange(g)}
-                    className={`py-3 rounded-xl text-sm font-bold transition-all ${
-                      user?.grade === g
-                        ? 'bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-[0_8px_20px_-8px_rgba(46,134,193,0.55)]'
-                        : 'bg-gray-50 text-gray-600 hover:bg-primary-50 hover:text-primary-600'
-                    }`}
-                  >
-                    {g}
-                  </button>
-                ))}
+              <div className="grid grid-cols-4 gap-2.5">
+                {/* DEMO MODE: all classes shown for showcase, only 2/6/10 selectable.
+                    To open everything up later, widen DEMO_CLASSES below. */}
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(g => {
+                  const enabled = [2, 6, 10].includes(g);
+                  return (
+                    <button
+                      key={g}
+                      onClick={() => enabled && handleGradeChange(g)}
+                      disabled={!enabled}
+                      title={enabled ? '' : 'Coming soon'}
+                      className={`py-3 rounded-xl text-sm font-bold transition-all ${
+                        !enabled
+                          ? 'bg-gray-50 text-gray-300 cursor-not-allowed'
+                          : user?.grade === g
+                            ? 'bg-gradient-to-br from-primary-400 to-primary-600 text-white shadow-[0_8px_20px_-8px_rgba(46,134,193,0.55)]'
+                            : 'bg-gray-50 text-gray-600 hover:bg-primary-50 hover:text-primary-600'
+                      }`}
+                    >
+                      {g}
+                    </button>
+                  );
+                })}
               </div>
+              <p className="text-[11px] text-gray-400 mt-2.5">Classes 2, 6 &amp; 10 available in this demo · others coming soon</p>
               <button
                 onClick={() => setGradeModalOpen(false)}
                 className="w-full mt-5 py-2 text-gray-400 text-sm hover:text-gray-600 font-medium"
