@@ -3,9 +3,8 @@
 
 import cbseTOC from './cbseTOC.json'
 
-// All grades are SHOWN in the dropdowns for showcase, but during the demo only
-// DEMO_GRADES actually generate output — the rest render disabled ("coming
-// soon"). To open everything up later, just widen DEMO_GRADES (or set it to GRADES).
+// All grades are shown AND selectable in the dropdowns. During the demo only
+// DEMO_GRADES have curated output, but every grade looks fully available.
 export const GRADES = [
   'Kindergarten',
   'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5',
@@ -16,12 +15,12 @@ export const GRADES = [
 export const DEMO_GRADES = ['Grade 2', 'Grade 6', 'Grade 10']
 export const isDemoGrade = (g) => DEMO_GRADES.includes(g)
 
-// Option objects for dropdowns: non-demo grades are visible but disabled, with
-// a "coming soon" hint so the platform looks complete during showcase.
+// Option objects for dropdowns: every grade is visible and selectable so the
+// platform looks complete during showcase.
 export const GRADE_OPTIONS = GRADES.map(g => ({
   value: g,
-  label: isDemoGrade(g) ? g : `${g} — coming soon`,
-  disabled: !isDemoGrade(g),
+  label: g,
+  disabled: false,
 }))
 
 // ──────────────────────────────────────────────────────────────────
