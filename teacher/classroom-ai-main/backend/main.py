@@ -606,7 +606,7 @@ def generate_worksheet(req: WorksheetRequest):
         "multiple_choice": "multiple choice questions with 4 options each (A, B, C, D)",
         "open_ended":      "open-ended short answer questions requiring critical thinking",
         "mixed":           "a balanced mix of fill-in-the-blank, multiple choice, and open-ended questions",
-        "qa":              "question and answer pairs formatted as 'Q: [question]' then 'A: [answer]' on separate lines",
+        "qa":              "ONLY subjective, open-ended descriptive questions that require written answers in the student's own words (short-answer and long-answer). Do NOT include any multiple-choice, fill-in-the-blank, true/false, match-the-following or other objective question types. Format each as 'Q: [question]' then 'A: [model answer]' on separate lines",
     }
 
     diff_map = {
