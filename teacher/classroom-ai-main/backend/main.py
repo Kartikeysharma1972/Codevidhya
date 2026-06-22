@@ -1019,13 +1019,14 @@ def generate_lesson_plan(req: LessonPlanRequest):
             f"Create a 1-page QUICK REFERENCE SHEET for a teacher about to teach this topic:\n\n"
             f"TOPIC: {req.topic}\nSUBJECT: {req.subject}\nGRADE LEVEL: {req.grade_level}\n\n"
             "Include these sections (keep each section concise and useful):\n\n"
-            "WHAT THIS TOPIC IS: 2-3 sentence summary of the topic and why students learn it\n\n"
-            "KEY FORMULAS / RULES: List all important formulas, theorems, or rules with notation\n\n"
-            "ESSENTIAL VOCABULARY: 6-8 key terms with one-line definitions\n\n"
-            "COMMON STUDENT MISTAKES: 3-4 specific mistakes students make and how to correct them\n\n"
-            "REAL-WORLD CONNECTIONS: 3 specific examples of where this topic appears in real life\n\n"
-            "PREREQUISITE CHECK: What students should already know before this lesson\n\n"
-            "Use ## for section headers, **bold** for terms, - for bullet points."
+            "About: 2-3 sentence summary of the topic and why students learn it\n\n"
+            "Key Words: List the key terms, formulas, theorems or rules for this topic, with notation where useful\n\n"
+            "Vocabulary: 6-8 key terms with one-line definitions\n\n"
+            "Common Student Mistakes: 3-4 specific mistakes students make and how to correct them\n\n"
+            "Real-World Connections: 3 specific examples of where this topic appears in real life\n\n"
+            "Prerequisite Check: What students should already know before this lesson\n\n"
+            "Use the exact section names above as ## headers in Title Case (do NOT write them in all-capitals). "
+            "Use **bold** for terms and - for bullet points."
         )
 
         topic_overview = call_openai(topic_system, topic_prompt, max_tokens=scale_tokens_for_language(2400, req.language), temperature=0.3)

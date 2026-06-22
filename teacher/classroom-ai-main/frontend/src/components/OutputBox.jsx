@@ -67,6 +67,25 @@ function downloadPDF(content, toolName) {
       if (y > pageH - margin) { doc.addPage(); y = margin }
       if (!trimmed) { y += 4; return }
 
+      // ── Section banner ("=== Name ===") → bold blue uppercase header ──
+      const bMatch = trimmed.match(/^={2,}\s*(.+?)\s*={2,}$/)
+      if (bMatch && /[A-Za-z0-9]/.test(bMatch[1])) {
+        const text = bMatch[1].replace(/\*\*([^*]+)\*\*/g, '$1').toUpperCase()
+        doc.setFont('helvetica', 'bold')
+        doc.setFontSize(14)
+        doc.setTextColor(29, 78, 216)
+        y += 5
+        const wrapped = doc.splitTextToSize(text, maxW)
+        if (y + wrapped.length * 7 > pageH - margin) { doc.addPage(); y = margin }
+        doc.text(wrapped, margin, y)
+        y += wrapped.length * 7
+        doc.setDrawColor(29, 78, 216)
+        doc.setLineWidth(0.6)
+        doc.line(margin, y - 1, margin + maxW, y - 1)
+        y += 4
+        return
+      }
+
       // ── Heading ──
       const hMatch = trimmed.match(/^(#{1,4})\s+(.+)/)
       const isBoldOnly = /^\*\*[^*]+\*\*$/.test(trimmed)
@@ -590,6 +609,9 @@ function parseContent(text) {
     const trimmed = line.trim()
     if (!trimmed) { blocks.push({ type: 'blank' }); i++; continue }
     if (/^[-=]{3,}$/.test(trimmed)) { blocks.push({ type: 'hr' }); i++; continue }
+    // "=== Section Name ===" → a bold blue uppercase section banner.
+    const bannerMatch = trimmed.match(/^={2,}\s*(.+?)\s*={2,}$/)
+    if (bannerMatch && /[A-Za-z0-9]/.test(bannerMatch[1])) { blocks.push({ type: 'banner', text: bannerMatch[1] }); i++; continue }
     const hMatch = trimmed.match(/^(#{1,4})\s+(.+)/)
     if (hMatch) { blocks.push({ type: 'heading', level: hMatch[1].length, text: hMatch[2] }); i++; continue }
     if (/^\*\*[^*]+\*\*$/.test(trimmed)) { blocks.push({ type: 'heading', level: 3, text: trimmed.slice(2, -2) }); i++; continue }
@@ -637,6 +659,18 @@ function RenderedOutput({ text }) {
       {renderBlocks.map((b, i) => {
         if (b.type === 'blank') return <div key={i} style={{ height: 8 }} />
         if (b.type === 'hr') return <div key={i} style={{ height: 1, background: 'linear-gradient(90deg, #e5e7eb 0%, #bfdbfe 50%, #e5e7eb 100%)', margin: '16px 0' }} />
+        if (b.type === 'banner') return (
+          <div key={i} style={{
+            marginTop: 30, marginBottom: 16,
+            fontWeight: 800, fontSize: '1.2rem', color: '#1d4ed8',
+            textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.4,
+            paddingBottom: 9, borderBottom: '2.5px solid #1d4ed8',
+            display: 'flex', alignItems: 'center', gap: 10,
+          }}>
+            <span style={{ width: 5, height: 24, background: '#1d4ed8', borderRadius: 3, flexShrink: 0 }} />
+            <InlineLine text={b.text} color="#1d4ed8" />
+          </div>
+        )
         if (b.type === 'heading') {
           const isH1 = b.level === 1, isH2 = b.level === 2
           const isAnswerKey = /^answer\s*keys?\b/i.test(b.text.replace(/\*\*/g, '').trim())
