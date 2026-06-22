@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo, useRef } from 'react'
 import EditorToolbar from '../shared/EditorToolbar'
+import { htmlStringToPdf, escapeHtml } from '../../utils/pdf'
 
 const todayIso = () => new Date().toISOString().slice(0, 10)
 const daysAgoIso = (n) => { const d = new Date(); d.setDate(d.getDate() - n); return d.toISOString().slice(0, 10) }
@@ -66,28 +67,17 @@ function downloadTxt(text, filename) {
   URL.revokeObjectURL(url)
 }
 
-function downloadPdf(text, filename, title) {
-  const s = document.createElement('script')
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-  s.onload = () => {
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pageW = doc.internal.pageSize.getWidth()
-    const pageH = doc.internal.pageSize.getHeight()
-    const margin = 15, maxW = pageW - margin * 2
-    let y = margin
-    if (title) { doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.text(title, margin, y); y += 8 }
-    doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(11, 27, 45)
-    text.split('\n').forEach(line => {
-      if (y > pageH - margin) { doc.addPage(); y = margin }
-      const t = line; if (!t.trim()) { y += 4; return }
-      const wrapped = doc.splitTextToSize(t, maxW)
-      if (y + wrapped.length * 5.5 > pageH - margin) { doc.addPage(); y = margin }
-      doc.text(wrapped, margin, y); y += wrapped.length * 5.5 + 1.5
-    })
-    doc.save(filename)
-  }
-  document.head.appendChild(s)
+// Image-based PDF so any output language (Hindi, Tamil, Urdu, …) exports
+// correctly — jsPDF's text fonts only cover Latin scripts.
+async function downloadPdf(text, filename, title) {
+  const bodyHtml = escapeHtml(text)
+    .split('\n')
+    .map(line => (line.trim() ? `<div>${line}</div>` : '<div style="height:8px"></div>'))
+    .join('')
+  const html =
+    (title ? `<div style="font-weight:800;font-size:18px;color:#0b1b2d;margin-bottom:10px">${escapeHtml(title)}</div>` : '')
+    + `<div style="font-size:14px;color:#0b1b2d;line-height:1.65">${bodyHtml}</div>`
+  await htmlStringToPdf(html, filename)
 }
 
 export default function HistoryPopup({ open, onClose, api, onLoadFromHistory }) {

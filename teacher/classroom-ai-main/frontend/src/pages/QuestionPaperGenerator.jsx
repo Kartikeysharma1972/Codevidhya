@@ -5,6 +5,7 @@ import { RichTextToolbar } from '../components/OutputBox'
 import { useAuth } from '../context/AuthContext'
 import { GRADES, GRADE_OPTIONS, getCoreSubjects, getMiscSubjects, getCoreTopics, getMiscTopics, findTopicDescription } from '../data/cbseSubjects'
 import { LANGUAGES } from '../data/languages'
+import { htmlStringToPdf, escapeHtml } from '../utils/pdf'
 
 const API = window.location.hostname === 'localhost' ? 'http://localhost:8001' : window.location.origin
 const STORAGE_KEY = 'classroom-qpaper-state'
@@ -103,111 +104,83 @@ const Label = ({ children }) => (
 
 /* ─── PDF Generation ───────────────────────────────── */
 // mode: 'full' (question paper + answer key) | 'questions' (paper only) | 'answers' (answer key only)
-function downloadPaperPDF(data, grade, subject, difficulty, logoDataUrl, mode = 'full') {
+// Built as HTML and snapshotted to PDF so EVERY output language (Hindi, Tamil,
+// Urdu, …) renders correctly — jsPDF's text fonts only cover Latin scripts.
+async function downloadPaperPDF(data, grade, subject, difficulty, logoDataUrl, mode = 'full') {
   const showQuestions = mode === 'full' || mode === 'questions'
   const showAnswers   = mode === 'full' || mode === 'answers'
-  const loadScript = (src) => new Promise((resolve) => {
-    if (document.querySelector(`script[src*="${src.split('/').pop()}"]`)) { resolve(); return }
-    const s = document.createElement('script'); s.src = src; s.onload = resolve; document.head.appendChild(s)
-  })
-  loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js').then(() => {
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-    const pw = doc.internal.pageSize.getWidth(), ph = doc.internal.pageSize.getHeight()
-    const m = 18, maxW = pw - m * 2
-    let y = m
+  const titleSuffix = mode === 'questions' ? ' (Question Paper)' : mode === 'answers' ? ' (Answer Key)' : ''
+  const questions = data.questions || []
+  const totalMarks = questions.reduce((s, q) => s + (q.marks || 1), 0)
+  const instructions = (data.instructions && data.instructions.length)
+    ? data.instructions
+    : ['Read all questions carefully.', 'Write neat and legible answers.', 'Marks are indicated on the right.']
 
-    const checkPage = (need) => { if (y + need > ph - m) { addWatermark(); doc.addPage(); y = m } }
-    const addWatermark = () => {
-      if (!logoDataUrl) return
-      try {
-        const s = 40; doc.saveGraphicsState()
-        doc.setGState(new doc.GState({ opacity: 0.06 }))
-        doc.addImage(logoDataUrl, 'PNG', (pw - s) / 2, (ph - s) / 2, s, s)
-        doc.restoreGraphicsState()
-      } catch {}
-    }
+  const headerLogo = logoDataUrl
+    ? `<div style="text-align:center;margin-bottom:8px"><img src="${logoDataUrl}" style="height:54px;object-fit:contain"/></div>` : ''
+  const watermark = logoDataUrl
+    ? `<div style="position:absolute;inset:0;z-index:0;opacity:0.05;background-image:url('${logoDataUrl}');background-repeat:repeat;background-size:140px;background-position:center"></div>` : ''
 
-    // Header with logo
-    if (logoDataUrl) {
-      try { doc.addImage(logoDataUrl, 'PNG', (pw - 18) / 2, y, 18, 18) } catch {}
-      y += 22
-    }
-    doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(11, 27, 45)
-    const titleSuffix = mode === 'questions' ? '  (Question Paper)' : mode === 'answers' ? '  (Answer Key)' : ''
-    const title = doc.splitTextToSize((data.title || 'Question Paper') + titleSuffix, maxW)
-    doc.text(title, pw / 2, y, { align: 'center' }); y += title.length * 7 + 2
+  let body = ''
+  if (showQuestions) {
+    body += `<div style="margin:16px 0 6px;font-weight:700;font-size:15px;color:#222">General Instructions:</div>`
+    body += `<ul style="margin:0 0 14px 0;padding-left:22px;color:#333;font-size:14px;line-height:1.7">`
+      + instructions.map(i => `<li>${escapeHtml(i)}</li>`).join('') + `</ul>`
 
-    doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(80, 80, 80)
-    doc.text(`Grade: ${grade}  |  Subject: ${subject}  |  Difficulty: ${difficulty}`, pw / 2, y, { align: 'center' }); y += 6
-    if (showQuestions) {
-      const totalMarks = (data.questions || []).reduce((s, q) => s + (q.marks || 1), 0)
-      doc.text(`Total Marks: ${totalMarks}  |  Time: ${data.duration || 'As instructed'}`, pw / 2, y, { align: 'center' }); y += 4
-    }
-    doc.setDrawColor(180); doc.setLineWidth(0.5); doc.line(m, y, pw - m, y); y += 5
+    let curSection = ''
+    questions.forEach((q, i) => {
+      if (q.section && q.section !== curSection) {
+        curSection = q.section
+        body += `<div style="margin:18px 0 8px;font-weight:800;font-size:16px;color:#1d4ed8;border-bottom:2px solid #1d4ed8;padding-bottom:4px">${escapeHtml(q.section)}</div>`
+      }
+      body += `<div style="margin:12px 0 4px;display:flex;justify-content:space-between;gap:12px;align-items:flex-start">`
+        + `<div style="font-size:15px;color:#111;flex:1"><b>Q${i + 1}.</b> ${escapeHtml(q.question)}</div>`
+        + (q.marks ? `<div style="font-size:13px;color:#777;white-space:nowrap">[${escapeHtml(q.marks)}]</div>` : '')
+        + `</div>`
+      if (q.type === 'mcq' && q.options) {
+        body += `<div style="margin:2px 0 6px 20px">`
+          + q.options.map((opt, j) => `<div style="font-size:14px;color:#33475b;margin:3px 0">(${['A','B','C','D'][j] || j + 1}) ${escapeHtml(String(opt).replace(/^[A-D]\)\s*/i, ''))}</div>`).join('')
+          + `</div>`
+      }
+      if (q.type === 'subjective') {
+        const lines = (q.marks || 1) <= 2 ? 3 : (q.marks || 1) <= 4 ? 5 : 8
+        body += `<div style="margin:4px 0 8px 20px">`
+          + Array.from({ length: lines }, () => `<div style="border-bottom:1px solid #cbd5e1;height:22px"></div>`).join('')
+          + `</div>`
+      }
+    })
+  }
 
-    if (showQuestions) {
-      // Instructions
-      const instructions = data.instructions || ['Read all questions carefully.', 'Write neat and legible answers.', 'Marks are indicated on the right.']
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(40, 40, 40)
-      doc.text('General Instructions:', m, y); y += 5
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5)
-      instructions.forEach(inst => { const l = doc.splitTextToSize(`• ${inst}`, maxW); checkPage(l.length * 4.5); doc.text(l, m + 2, y); y += l.length * 4.5 })
-      y += 5
+  if (showAnswers) {
+    if (showQuestions) body += `<div style="height:28px"></div>`
+    body += `<div style="margin:18px 0 10px;text-align:center;font-weight:800;font-size:18px;color:#0b1b2d;border-top:2px solid #0b1b2d;padding-top:14px">ANSWER KEY</div>`
+    questions.forEach((q, i) => {
+      body += `<div style="margin:8px 0">`
+        + `<div style="font-size:14px;color:#111"><b>Q${i + 1}.</b> ${q.type === 'mcq' ? escapeHtml(q.correct || '') : '(Subjective)'}</div>`
+        + (q.explanation ? `<div style="font-size:13px;color:#555;margin-left:20px">${escapeHtml(q.explanation)}</div>` : '')
+        + `</div>`
+    })
+  }
 
-      // Questions
-      let curSection = ''
-      ;(data.questions || []).forEach((q, i) => {
-        if (q.section && q.section !== curSection) {
-          curSection = q.section; checkPage(12)
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(57, 154, 255)
-          doc.text(q.section, m, y); y += 7
-        }
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(11, 27, 45)
-        const qW = doc.splitTextToSize(q.question, maxW - 22); checkPage(qW.length * 5.5 + 6)
-        doc.text(`Q${i + 1}.`, m, y)
-        if (q.marks) { doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(120, 120, 120); doc.text(`[${q.marks}]`, pw - m, y, { align: 'right' }) }
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 30, 30)
-        doc.text(qW, m + 10, y); y += qW.length * 5.5 + 2
+  const metaLine = `Grade: ${escapeHtml(grade)} &nbsp;|&nbsp; Subject: ${escapeHtml(subject)} &nbsp;|&nbsp; Difficulty: ${escapeHtml(difficulty)}`
+  const marksLine = showQuestions
+    ? `<div style="text-align:center;font-size:13px;color:#555;margin-top:3px">Total Marks: ${totalMarks} &nbsp;|&nbsp; Time: ${escapeHtml(data.duration || 'As instructed')}</div>` : ''
 
-        if (q.type === 'mcq' && q.options) {
-          q.options.forEach((opt, j) => {
-            const letter = ['A','B','C','D'][j]
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor(61, 85, 110)
-            const oW = doc.splitTextToSize(`(${letter}) ${opt.replace(/^[A-D]\)\s*/i, '')}`, maxW - 18)
-            checkPage(oW.length * 5 + 1); doc.text(oW, m + 14, y); y += oW.length * 5 + 1
-          }); y += 2
-        }
-        if (q.type === 'subjective') {
-          const lines = (q.marks || 1) <= 2 ? 3 : (q.marks || 1) <= 4 ? 5 : 8
-          doc.setDrawColor(200); doc.setLineWidth(0.3)
-          for (let l = 0; l < lines; l++) { checkPage(7); doc.line(m + 10, y + 2, pw - m, y + 2); y += 7 }
-          y += 2
-        }
-        y += 3
-      })
-    }
+  const html =
+    `<div style="position:relative">`
+    + watermark
+    + `<div style="position:relative;z-index:1">`
+    + headerLogo
+    + `<div style="text-align:center;font-weight:800;font-size:20px;color:#0b1b2d">${escapeHtml((data.title || 'Question Paper') + titleSuffix)}</div>`
+    + `<div style="text-align:center;font-size:13px;color:#555;margin-top:4px">${metaLine}</div>`
+    + marksLine
+    + `<div style="border-bottom:1px solid #b8c2cc;margin:10px 0 2px"></div>`
+    + body
+    + `</div></div>`
 
-    if (showAnswers) {
-      // Answer key — on its own page when the question paper precedes it.
-      if (showQuestions) { addWatermark(); doc.addPage(); y = m }
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(11, 27, 45)
-      doc.text('ANSWER KEY', pw / 2, y, { align: 'center' }); y += 10
-      ;(data.questions || []).forEach((q, i) => {
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(30, 30, 30); checkPage(12)
-        doc.text(`Q${i + 1}. ${q.type === 'mcq' ? q.correct : '(Subjective)'}`, m, y); y += 4
-        if (q.explanation) {
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(80, 80, 80)
-          const eL = doc.splitTextToSize(q.explanation, maxW - 10); checkPage(eL.length * 4.5)
-          doc.text(eL, m + 6, y); y += eL.length * 4.5 + 4
-        }
-      })
-    }
-
-    addWatermark()
-    const fileSuffix = mode === 'questions' ? '-Questions' : mode === 'answers' ? '-Answer-Key' : ''
-    doc.save(`${(data.title || 'Question-Paper').replace(/\s+/g, '-')}${fileSuffix}.pdf`)
-  })
+  const fileSuffix = mode === 'questions' ? '-Questions' : mode === 'answers' ? '-Answer-Key' : ''
+  const filename = `${(data.title || 'Question-Paper').replace(/\s+/g, '-')}${fileSuffix}.pdf`
+  await htmlStringToPdf(html, filename)
 }
 
 
@@ -334,7 +307,9 @@ export default function QuestionPaperGenerator() {
   const handleDownloadPDF = (downloadMode = 'full') => {
     if (!paper) return
     setDlOpen(false); setPdfLoading(true)
-    setTimeout(() => { downloadPaperPDF(paper, grade, subject, difficulty, schoolLogo, downloadMode); setPdfLoading(false) }, 300)
+    downloadPaperPDF(paper, grade, subject, difficulty, schoolLogo, downloadMode)
+      .catch(e => { console.error('PDF generation failed:', e); setError('Could not generate PDF. Please try again.') })
+      .finally(() => setPdfLoading(false))
   }
 
   useEffect(() => {

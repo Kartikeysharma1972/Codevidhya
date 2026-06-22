@@ -1,6 +1,8 @@
 import React, { useRef, useState, useCallback, useEffect } from 'react'
+import { createRoot } from 'react-dom/client'
 import katex from 'katex'
 import 'katex/dist/katex.min.css'
+import { elementToPdf } from '../utils/pdf'
 
 // Pictographic emojis/symbols to strip from output — keeps arrows (→), math
 // operators, bullets and dashes intact so equations and mappings are unharmed.
@@ -46,138 +48,30 @@ export function downloadTxt(content, filename) {
 }
 
 // ── PDF DOWNLOAD ──────────────────────────────────────
-function downloadPDF(content, toolName) {
-  const script = document.createElement('script')
-  script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
-  script.onload = () => {
-    const { jsPDF } = window.jspdf
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
-
-    const pageW   = doc.internal.pageSize.getWidth()
-    const pageH   = doc.internal.pageSize.getHeight()
-    const margin  = 15
-    const maxW    = pageW - margin * 2
-    let y         = margin
-
-    const lines = content.split('\n')
-
-    lines.forEach(line => {
-      const trimmed = line.trim()
-
-      if (y > pageH - margin) { doc.addPage(); y = margin }
-      if (!trimmed) { y += 4; return }
-
-      // ── Section banner ("=== Name ===") → bold blue uppercase header ──
-      const bMatch = trimmed.match(/^={2,}\s*(.+?)\s*={2,}$/)
-      if (bMatch && /[A-Za-z0-9]/.test(bMatch[1])) {
-        const text = bMatch[1].replace(/\*\*([^*]+)\*\*/g, '$1').toUpperCase()
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(14)
-        doc.setTextColor(29, 78, 216)
-        y += 5
-        const wrapped = doc.splitTextToSize(text, maxW)
-        if (y + wrapped.length * 7 > pageH - margin) { doc.addPage(); y = margin }
-        doc.text(wrapped, margin, y)
-        y += wrapped.length * 7
-        doc.setDrawColor(29, 78, 216)
-        doc.setLineWidth(0.6)
-        doc.line(margin, y - 1, margin + maxW, y - 1)
-        y += 4
-        return
-      }
-
-      // ── Heading ──
-      const hMatch = trimmed.match(/^(#{1,4})\s+(.+)/)
-      const isBoldOnly = /^\*\*[^*]+\*\*$/.test(trimmed)
-
-      if (hMatch || isBoldOnly) {
-        const text = hMatch ? hMatch[2].replace(/\*\*([^*]+)\*\*/g, '$1') : trimmed.slice(2, -2)
-        const level = hMatch ? hMatch[1].length : 2
-        const size  = level === 1 ? 14 : level === 2 ? 12 : 11
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(size)
-        doc.setTextColor(10, 10, 10)
-        y += level <= 2 ? 4 : 2
-        const wrapped = doc.splitTextToSize(text, maxW)
-        if (y + wrapped.length * 6 > pageH - margin) { doc.addPage(); y = margin }
-        doc.text(wrapped, margin, y)
-        y += wrapped.length * 6 + 3
-        if (level <= 2) {
-          doc.setDrawColor(57, 154, 255)
-          doc.setLineWidth(0.4)
-          doc.line(margin, y - 1, margin + maxW * 0.35, y - 1)
-          y += 2
-        }
-        return
-      }
-
-      const qMatch = trimmed.match(/^(\d+)[.)]\s+(.+)/)
-      if (qMatch) {
-        const clean = qMatch[2].replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(10)
-        doc.setTextColor(57, 154, 255)
-        doc.text(`${qMatch[1]}.`, margin, y)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(10, 10, 10)
-        const wrapped = doc.splitTextToSize(clean, maxW - 8)
-        if (y + wrapped.length * 5.5 > pageH - margin) { doc.addPage(); y = margin }
-        doc.text(wrapped, margin + 8, y)
-        y += wrapped.length * 5.5 + 2
-        return
-      }
-
-      const optMatch = trimmed.match(/^([A-Da-d])[.)]\s+(.+)/)
-      if (optMatch) {
-        const clean = optMatch[2].replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
-        doc.setFont('helvetica', 'bold')
-        doc.setFontSize(9.5)
-        doc.setTextColor(57, 154, 255)
-        doc.text(`${optMatch[1].toUpperCase()})`, margin + 6, y)
-        doc.setFont('helvetica', 'normal')
-        doc.setTextColor(40, 40, 40)
-        const wrapped = doc.splitTextToSize(clean, maxW - 16)
-        if (y + wrapped.length * 5 > pageH - margin) { doc.addPage(); y = margin }
-        doc.text(wrapped, margin + 14, y)
-        y += wrapped.length * 5 + 1.5
-        return
-      }
-
-      if (/^[-•*]\s+/.test(trimmed)) {
-        const text = trimmed.replace(/^[-•*]\s+/, '').replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
-        doc.setFont('helvetica', 'normal')
-        doc.setFontSize(10)
-        doc.setTextColor(57, 154, 255)
-        doc.text('•', margin + 4, y)
-        doc.setTextColor(40, 40, 40)
-        const wrapped = doc.splitTextToSize(text, maxW - 10)
-        if (y + wrapped.length * 5.5 > pageH - margin) { doc.addPage(); y = margin }
-        doc.text(wrapped, margin + 10, y)
-        y += wrapped.length * 5.5 + 1.5
-        return
-      }
-
-      if (/^[-=]{3,}$/.test(trimmed)) {
-        doc.setDrawColor(200, 200, 200)
-        doc.setLineWidth(0.3)
-        doc.line(margin, y, margin + maxW, y)
-        y += 4
-        return
-      }
-
-      const clean = trimmed.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
-      doc.setFont('helvetica', 'normal')
-      doc.setFontSize(10)
-      doc.setTextColor(40, 60, 90)
-      const wrapped = doc.splitTextToSize(clean, maxW)
-      if (y + wrapped.length * 5.5 > pageH - margin) { doc.addPage(); y = margin }
-      doc.text(wrapped, margin, y)
-      y += wrapped.length * 5.5 + 2
+// Render the markdown through the SAME on-screen engine (RenderedOutput) into
+// an off-screen container, then snapshot it to a multi-page PDF. This keeps
+// math, tables and styling intact AND makes every output language (Hindi,
+// Tamil, Urdu, …) export correctly — jsPDF's text fonts only cover Latin.
+async function renderMarkdownToPdf(markdown, filename) {
+  const holder = document.createElement('div')
+  holder.style.cssText =
+    'position:fixed;left:-99999px;top:0;width:794px;background:#ffffff;' +
+    'padding:34px 38px;box-sizing:border-box;' +
+    'font-family:"Inter","Noto Sans","Nirmala UI","Noto Sans Devanagari",' +
+    '"Noto Sans Tamil","Noto Sans Bengali",system-ui,Arial,sans-serif;'
+  document.body.appendChild(holder)
+  const root = createRoot(holder)
+  try {
+    await new Promise(res => {
+      root.render(<RenderedOutput text={stripEmojis(markdown)} />)
+      // Allow React to commit and KaTeX/layout to settle before snapshot.
+      setTimeout(res, 400)
     })
-
-    doc.save(`${toolName.replace(/\s+/g, '-')}.pdf`)
+    await elementToPdf(holder, filename.endsWith('.pdf') ? filename : `${filename}.pdf`)
+  } finally {
+    root.unmount()
+    holder.remove()
   }
-  document.head.appendChild(script)
 }
 
 // ── ANSWER KEY SPLITTER ──────────────────────────────
@@ -225,7 +119,10 @@ function DownloadMenu({ getText, toolName, showToast }) {
     setOpen(false)
     if (fmt === 'pdf') {
       setBusy(true); showToast('Preparing PDF...')
-      setTimeout(() => { downloadPDF(content, name); setBusy(false); showToast('Downloaded as PDF!') }, 300)
+      renderMarkdownToPdf(content, `${name.replace(/\s+/g, '-')}.pdf`)
+        .then(() => showToast('Downloaded as PDF!'))
+        .catch(() => showToast('Could not generate PDF'))
+        .finally(() => setBusy(false))
     } else {
       downloadTxt(content, `${name.replace(/\s+/g, '-')}.txt`); showToast('Downloaded as TXT!')
     }
@@ -805,11 +702,10 @@ export default function OutputBox({ result, loading, toolName = 'output', icon, 
     const text = editing ? getEditMarkdown() : cleanResult
     setPdfLoading(true)
     showToast('Preparing PDF...')
-    setTimeout(() => {
-      downloadPDF(text, toolName)
-      setPdfLoading(false)
-      showToast('Downloaded as PDF!')
-    }, 300)
+    renderMarkdownToPdf(text, `${toolName.replace(/\s+/g, '-')}.pdf`)
+      .then(() => showToast('Downloaded as PDF!'))
+      .catch(() => showToast('Could not generate PDF'))
+      .finally(() => setPdfLoading(false))
   }
 
   const startEdit = () => {
