@@ -87,9 +87,9 @@ const tools = [
       </svg>
     ),
     title: 'Feedback Writer',
-    desc: 'Personalized student feedback with star ratings + report card export.',
-    features: ['Star ratings', 'Tone presets', 'Report card'],
-    time: '~8s',
+    desc: 'IB MYP–style narrative reports — criterion-based feedback, action steps & report export.',
+    features: ['Criteria 1–8', 'ATL & Learner Profile', 'Report export'],
+    time: '~12s',
     isNew: true,
   },
   {

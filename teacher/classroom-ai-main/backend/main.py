@@ -2850,16 +2850,40 @@ def cs_tutor(req: CSChatRequest):
         raise HTTPException(status_code=500, detail=f"Tutor error: {e}")
 
 
-# ─── FEEDBACK GENERATOR ────────────────────────────────
+# ─── NARRATIVE FEEDBACK GENERATOR (IB MYP model) ────────────────────────────────
+# Criterion-based narrative reporting inspired by IB MYP / Cambridge:
+#   • Criteria (the "what")  — each subject skill scored 1–8 as a *descriptor level*
+#   • ATL skills (the "how")  — Approaches to Learning, behaviour reframed as a skill
+#   • Learner Profile (the "who") — qualitative character-trait observation
+
+class MYPCriterionInput(BaseModel):
+    key: str = ""      # 'A', 'B', 'C', 'D'
+    name: str = ""     # e.g. 'Knowing & understanding'
+    level: int = 0     # 0–8 (0 = not assessed this term)
+    note: str = ""     # optional teacher observation to ground the narrative
 
 class FeedbackRequest(BaseModel):
     student_name: str
     grade_level: str
-    feedback_type: str = "general"
-    tone: str = "encouraging"
-    ratings: dict | None = None
+    subject: str = ""                        # display subject, e.g. 'History'
+    subject_group: str = ""                  # MYP group, e.g. 'Individuals & Societies'
+    criteria: list[MYPCriterionInput] = []
+    atl_focus: str = ""                      # ATL cluster, e.g. 'Self-management'
+    atl_note: str = ""                       # teacher observation about the ATL skill
+    learner_attributes: list[str] = []       # e.g. ['Risk-taker', 'Inquirer']
+    learner_note: str = ""                   # teacher observation for the profile note
+    tone: str = "constructive"
     context: str = ""
     language: str = "English"
+
+# Authoritative 1–8 band descriptors (kept in sync with frontend data/ibMyp.js).
+def _myp_band(level: int) -> str:
+    l = int(level or 0)
+    if l >= 7: return "Exemplary"
+    if l >= 5: return "Proficient"
+    if l >= 3: return "Developing"
+    if l >= 1: return "Beginning"
+    return "Not evident"
 
 @app.post("/api/generate-feedback")
 def generate_feedback(req: FeedbackRequest):
@@ -2868,79 +2892,130 @@ def generate_feedback(req: FeedbackRequest):
     if not req.grade_level.strip():
         raise HTTPException(status_code=400, detail="Grade level is required.")
 
-    # Validate + summarize ratings so the AI can reason about strengths vs. growth areas.
-    rating_lines = ""
-    strengths, growth_areas = [], []
-    if req.ratings:
-        clean = {}
-        for k, v in req.ratings.items():
-            try:
-                iv = int(v)
-                if 1 <= iv <= 5:
-                    clean[str(k)] = iv
-            except (TypeError, ValueError):
-                # Silently skip non-numeric values rather than confusing the AI.
-                continue
-        if clean:
-            rating_lines = "\n".join([f"- {k}: {v}/5" for k, v in clean.items()])
-            strengths    = [k for k, v in clean.items() if v >= 4]
-            growth_areas = [k for k, v in clean.items() if v <= 3]
-    if not rating_lines:
-        rating_lines = "Not provided"
+    # Keep only assessed criteria (level 1–8); clamp anything out of range.
+    assessed = []
+    for c in (req.criteria or []):
+        try:
+            lvl = int(c.level)
+        except (TypeError, ValueError):
+            continue
+        if 1 <= lvl <= 8 and (c.key or c.name):
+            assessed.append({"key": c.key, "name": c.name, "level": lvl, "note": (c.note or "").strip()})
+    if not assessed and not req.atl_focus and not req.learner_attributes:
+        raise HTTPException(status_code=400, detail="Assess at least one criterion, ATL skill or Learner Profile attribute.")
 
     tone_guides = {
         "encouraging":  "warm, motivating, future-focused. Celebrate effort and progress.",
-        "constructive": "balanced and direct. Specific praise paired with specific growth steps.",
+        "constructive": "balanced and direct. Specific praise paired with a specific next step.",
         "formal":       "polished and professional, suitable for a printed report card.",
         "warm":         "personal and caring, like a teacher who knows the student well.",
         "professional": "concise, measured, and observation-based with concrete examples.",
     }
-    tone_guide = tone_guides.get((req.tone or "").lower(), tone_guides["encouraging"])
+    tone_guide = tone_guides.get((req.tone or "").lower(), tone_guides["constructive"])
+    first_name = req.student_name.split()[0]
+    subject_label = req.subject.strip() or req.subject_group.strip() or "this subject"
 
-    strengths_hint = f"High-rated areas (write strengths around these first): {', '.join(strengths)}." if strengths else ""
-    growth_hint    = f"Lower-rated areas (suggest growth here): {', '.join(growth_areas)}." if growth_areas else ""
+    crit_lines = "\n".join(
+        f"- Criterion {c['key']}: {c['name']} — level {c['level']}/8 ({_myp_band(c['level'])})"
+        + (f". Teacher note: {c['note']}" if c["note"] else "")
+        for c in assessed
+    ) or "None assessed this term."
 
     system_prompt = (
-        "You are a thoughtful school teacher writing personalised end-of-term feedback for ONE student. "
-        "Your feedback feels human, specific, and never generic.\n\n"
+        "You are an experienced IB MYP subject teacher writing narrative, criterion-based report feedback for ONE student. "
+        "This is NOT a single overall comment — you write specific, skill-by-skill feedback the way it appears on a "
+        "ManageBac or Toddle report. Your writing is human, precise, and never generic.\n\n"
+        "HOW THE MYP MODEL WORKS (respect this):\n"
+        "- Each criterion is scored 1–8 as a DESCRIPTOR of skill development, NOT a pass/fail mark. A '4' means the "
+        "student is DEVELOPING that skill, not failing it. Never call any level a fail or a bad score.\n"
+        "- 7–8 Exemplary, 5–6 Proficient, 3–4 Developing, 1–2 Beginning. Frame every level as a stage on a journey.\n"
+        "- Feedback tells the parent EXACTLY where the child is strong and what specific skill to grow next.\n\n"
         "WRITING RULES:\n"
         "- Address the student by FIRST NAME only.\n"
-        "- Length: 110-170 words. One flowing paragraph (not bullet points, not multiple paragraphs).\n"
-        "- Structure: (1) Open with a specific strength tied to a behaviour, (2) acknowledge effort or growth area, "
-        "(3) one concrete suggestion for next term, (4) warm closing.\n"
-        "- NEVER use clichés like 'good job', 'keep it up', 'continue the good work', 'I am happy to say'.\n"
-        "- Reference the rated areas naturally — do NOT list ratings or scores in the text.\n"
-        "- Match the requested tone exactly.\n\n"
-        "OUTPUT FORMAT (STRICT):\n"
-        "Return ONLY the feedback paragraph as plain text. No JSON, no bullet points, no markdown headers, no '**bold**' tags, "
-        "no preamble like 'Here is the feedback:'. Just the paragraph itself."
+        "- For EACH criterion: write a 'narrative' of 1–2 sentences naming a concrete, subject-specific behaviour that "
+        "matches the level, plus an 'action_step' — one concrete, do-able next step (phrase it as a next step even for "
+        "high levels: how to stretch further). Ground it in the teacher note when given.\n"
+        "- For the ATL skill: reframe behaviour as a teachable skill (e.g. turn 'waits until the last minute' into a "
+        "self-management strategy like setting mini-deadlines). 2–3 sentences.\n"
+        "- For the Learner Profile: a warm, specific qualitative observation (2 sentences) about the named attribute(s), "
+        "tied to a real moment when possible.\n"
+        "- 'overall': one warm sentence summarising the term.\n"
+        "- NEVER use clichés ('good job', 'keep it up', 'continue the good work'). Be specific to the subject.\n"
+        "- Match the requested tone exactly. Write in the second person to the student ('You...').\n\n"
+        "OUTPUT — return ONLY this JSON object (no markdown, no preamble):\n"
+        "{\n"
+        '  "criteria": [ { "key": "A", "narrative": "...", "action_step": "..." }, ... one per assessed criterion ],\n'
+        '  "atl": { "narrative": "..." },\n'
+        '  "learner_profile": { "narrative": "..." },\n'
+        '  "overall": "..."\n'
+        "}\n"
+        "Include a criteria entry for EVERY assessed criterion, matched by its key. If no ATL skill or no Learner "
+        "Profile attribute was provided, return an empty string for that narrative."
         + get_language_directive(req.language)
     )
 
     user_prompt = (
-        f"Student first name: {req.student_name.split()[0]}\n"
-        f"Full name (for context only, do not repeat in feedback): {req.student_name}\n"
+        f"Student first name: {first_name}\n"
         f"Grade level: {req.grade_level}\n"
-        f"Feedback focus area: {req.feedback_type}\n"
-        f"Tone: {req.tone} — {tone_guide}\n"
-        f"Ratings (out of 5, for your reasoning only — do NOT list these in the paragraph):\n{rating_lines}\n"
-        f"{strengths_hint}\n{growth_hint}\n"
+        f"Subject group: {req.subject_group or 'Not specified'}\n"
+        f"Subject: {subject_label}\n"
+        f"Tone: {req.tone} — {tone_guide}\n\n"
+        f"ASSESSED CRITERIA (write narrative + action_step for each, matched by key):\n{crit_lines}\n\n"
+        f"ATL skill focus: {req.atl_focus or 'None'}\n"
+        f"ATL teacher observation: {req.atl_note.strip() or 'None — infer a plausible, supportive focus from the criteria.'}\n\n"
+        f"Learner Profile attribute(s): {', '.join(req.learner_attributes) or 'None'}\n"
+        f"Learner Profile teacher observation: {req.learner_note.strip() or 'None'}\n\n"
         f"Extra teacher context: {req.context.strip() or 'None'}\n\n"
-        "Write the feedback paragraph now."
+        "Write the report JSON now."
     )
 
-    text = call_openai(system_prompt, user_prompt, max_tokens=600, temperature=0.75)
-    # Light cleanup: strip stray quotes, markdown, or leading preamble.
-    cleaned = text.strip().strip('"').strip("'")
-    for prefix in ("Feedback:", "Here is the feedback:", "Here's the feedback:"):
-        if cleaned.lower().startswith(prefix.lower()):
-            cleaned = cleaned[len(prefix):].strip()
+    data = _call_openai_json(
+        system_prompt, user_prompt,
+        max_tokens=scale_tokens_for_language(1600, req.language),
+        temperature=0.65,
+    )
+
+    # Merge AI narratives with authoritative teacher-entered levels (never trust the
+    # model for the numbers). Match narratives by criterion key.
+    ai_crit = {}
+    for item in (data.get("criteria") or []):
+        if isinstance(item, dict) and item.get("key"):
+            ai_crit[str(item["key"]).strip().upper()] = item
+    criteria_out = []
+    for c in assessed:
+        ai = ai_crit.get(str(c["key"]).strip().upper(), {})
+        criteria_out.append({
+            "key": c["key"],
+            "name": c["name"],
+            "level": c["level"],
+            "band": _myp_band(c["level"]),
+            "narrative": (ai.get("narrative") or "").strip(),
+            "action_step": (ai.get("action_step") or "").strip(),
+        })
+
+    atl_out = None
+    if req.atl_focus:
+        atl_out = {
+            "focus": req.atl_focus,
+            "narrative": ((data.get("atl") or {}).get("narrative") or "").strip(),
+        }
+    lp_out = None
+    if req.learner_attributes:
+        lp_out = {
+            "attributes": req.learner_attributes,
+            "narrative": ((data.get("learner_profile") or {}).get("narrative") or "").strip(),
+        }
+
     return {
         "student_name": req.student_name,
         "grade_level": req.grade_level,
-        "feedback_type": req.feedback_type,
+        "subject": subject_label,
+        "subject_group": req.subject_group,
         "tone": req.tone,
-        "generated_feedback": cleaned,
+        "criteria": criteria_out,
+        "atl": atl_out,
+        "learner_profile": lp_out,
+        "overall": (data.get("overall") or "").strip(),
     }
 
 
