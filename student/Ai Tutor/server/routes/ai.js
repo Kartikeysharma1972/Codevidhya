@@ -488,6 +488,24 @@ function fixQuestionTypes(questions, grade, subject) {
   });
 }
 
+// The model sometimes emits option/item values as real JSON arrays instead of
+// strings (Python questions: options like [[2,3],[1,2,3]]). Mongo's [String]
+// schema then rejects the whole test submit, so render them back to literal text.
+const asText = (v) =>
+  typeof v === 'string' ? v
+  : v == null ? ''
+  : typeof v === 'object' ? JSON.stringify(v)
+  : String(v);
+
+function coerceQuestionText(q) {
+  if (Array.isArray(q.options)) q.options = q.options.map(asText);
+  if (Array.isArray(q.items)) q.items = q.items.map(asText);
+  if (Array.isArray(q.pairs)) {
+    q.pairs = q.pairs.map(p => ({ ...p, left: asText(p?.left), right: asText(p?.right) }));
+  }
+  return q;
+}
+
 function sanitizeQuestions(questions) {
   return questions.filter(q => {
     if (!q || typeof q.question !== 'string' || !q.question.trim()) return false;
@@ -503,7 +521,7 @@ function sanitizeQuestions(questions) {
       if (!Array.isArray(q.options) || q.options.length < 2) return false;
     }
     return true;
-  });
+  }).map(coerceQuestionText);
 }
 
 router.post('/mock-test/generate', authMiddleware, async (req, res) => {
@@ -647,7 +665,7 @@ router.post('/mock-test/submit', authMiddleware, async (req, res) => {
       topicAccuracy[q.topic].total++;
       if (isCorrect) topicAccuracy[q.topic].correct++;
 
-      return { ...q, isCorrect, timeTakenSeconds: q.timeTakenSeconds || 0 };
+      return coerceQuestionText({ ...q, isCorrect, timeTakenSeconds: q.timeTakenSeconds || 0 });
     });
 
     const weakAreas = Object.entries(topicAccuracy)
